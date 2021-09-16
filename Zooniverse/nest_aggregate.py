@@ -129,7 +129,7 @@ def parse_subject_data(x):
             site = np.nan
             event = np.nan
             
-        bounds = pd.DataFrame({"subject_ids":[key], "nest_id":[nest_id],"site":site,"event":event})
+        bounds = pd.DataFrame({"subject_ids":[key], "nest_id":[nest_id],"site":site,"event":event,"filename":site_data})
     
     return bounds
 
@@ -295,7 +295,7 @@ def run(classifications_file=None, savedir=".", download=False, generate=False,m
     
     #Connect to index
     fname = "{}/{}.csv".format(savedir, "nest_aggregate")
-    selected_annotations.to_csv(fname)
+    #selected_annotations.to_csv(fname)
     
     return fname
 
