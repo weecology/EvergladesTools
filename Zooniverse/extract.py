@@ -3,7 +3,6 @@ import pandas as pd
 import paramiko
 import os
 import geopandas as gp
-import everglade_tokens
 import rasterio
 import requests
 import json
