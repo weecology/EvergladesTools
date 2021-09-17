@@ -12,16 +12,6 @@ from shapely.geometry import box
 from PIL import Image
 import numpy as np
 
-#source keys outside of git control
-import everglade_tokens
-
-def hipergator_auth():
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    
-    client.connect(everglade_tokens.get_ip(), username=everglade_tokens.get_username(),password=everglade_tokens.get_password())
-    return client
-
 def download_from_zooniverse(name, url):
     #check first if it exists
     if not os.path.exists(name):
