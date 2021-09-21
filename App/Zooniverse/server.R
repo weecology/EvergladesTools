@@ -164,4 +164,26 @@ shinyServer(function(input, output, session) {
     update_nests(selected_nests, MAPBOX_ACCESS_TOKEN)
   })
   
+
+# Use server-side selectize for speed
+# See: https://shiny.rstudio.com/articles/selectize.html
+
+site_list <- c("All", selected_boxes$site)
+updateSelectizeInput(session, "landing_site", choices = site_list, selected = "All", server = TRUE)
+
+select_image_list <- unique(selected_boxes$tileset_id)
+updateSelectizeInput(session, "selected_image", choices = select_image_list, selected = "JetportSouth_03_23_2020", server = TRUE)
+
+image_list<-unique(paste(selected_boxes$site, selected_boxes$event))
+updateSelectizeInput(session, "colony_selected_image", choices = image_list, selected = "6thBridge 03112020", server = TRUE)
+
+site_list<-unique(selected_boxes$site)
+updateSelectizeInput(session, "timeseries_site", choices = site_list, selected = site_list, server = TRUE)
+
+species_list<-unique(selected_boxes$species)
+updateSelectizeInput(session, "timeseries_species", choices = species_list, selected = species_list, server = TRUE)
+
+behavior_list<-unique(selected_boxes$behavior)
+updateSelectizeInput(session, "timeseries_behavior", choices = behavior_list, selected = behavior_list, server = TRUE)
+
 })
