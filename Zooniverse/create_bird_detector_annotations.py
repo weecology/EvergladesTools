@@ -144,11 +144,11 @@ def run(shp_dir, empty_frames_path=None, save_dir="."):
 
 
     #add some blank annotations
-    empty_frames_df["xmin"] = pd.Series(dtype="Int64")
-    empty_frames_df["ymin"] = pd.Series(dtype="Int64")
-    empty_frames_df["xmax"] = pd.Series(dtype="Int64")
-    empty_frames_df["ymax"] = pd.Series(dtype="Int64")
-    empty_frames_df["label"] = pd.Series(dtype=str)
+    empty_frames_df["xmin"] = 0
+    empty_frames_df["ymin"] = 0
+    empty_frames_df["xmax"] = 0
+    empty_frames_df["ymax"] = 0
+    empty_frames_df["label"] = "Bird"
     
     empty_train, empty_test = split_test_train(empty_frames_df)
     
