@@ -31,7 +31,8 @@ def extract_empty(parsed_data, image_data,save_dir="."):
     df = pd.read_csv(parsed_data)
     
     #get empty frames
-    df = df[df.species.isna()]
+    is_empty = df.groupby(["subject_ids"]).apply(lambda x: sum(~x.species.isna())==0)
+    df = df[df.subject_ids.isin(is_empty[is_empty == True].index)]
     df["subject_id"] = df.subject_ids.astype(int)
         
     #Read in image location data
