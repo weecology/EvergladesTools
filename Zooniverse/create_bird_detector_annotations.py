@@ -139,6 +139,10 @@ def run(shp_dir, empty_frames_path=None, save_dir="."):
     empty_frames_df = pd.read_csv(empty_frames_path, index_col=0)
     empty_frames_df = empty_frames_df.sample(n=100)
     
+    #Convert full paths to filenames to match other processing
+    empty_frames_df['image_path'] = [Path(path).name for path in empty_frames_df['image_path']]
+
+
     #add some blank annotations
     empty_frames_df["xmin"] = pd.Series(dtype="Int64")
     empty_frames_df["ymin"] = pd.Series(dtype="Int64")
