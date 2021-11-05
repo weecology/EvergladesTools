@@ -130,6 +130,7 @@ def train_model(train_path, test_path, empty_images_path=None, save_dir=".", deb
     if comet_logger is not None:
         try:
             results["results"].to_csv("{}/iou_dataframe.csv".format(model_savedir))
+            results["predictions"].to_csv("{}/predictions_dataframe.csv".format(model_savedir))
             comet_logger.experiment.log_asset("{}/iou_dataframe.csv".format(model_savedir))
             
             results["class_recall"].to_csv("{}/class_recall.csv".format(model_savedir))
@@ -145,13 +146,24 @@ def train_model(train_path, test_path, empty_images_path=None, save_dir=".", deb
             
             comet_logger.experiment.log_parameter("saved_checkpoint","{}/species_model.pl".format(model_savedir))
             
-            ypred = results["results"].predicted_label.astype('category').cat.codes.to_numpy()            
+            # Make predicted labels while dealing with test data that does not get a bounding box.
+            # These predicted labels return as nan, so check for them using y == y (returns False for nan)
+            # and then replace them with one more than the available class indexes for confusion matrix
+            ypred = results["results"].predicted_label       
+            ypred = np.asarray([model.label_dict[y] if y == y else model.num_classes for y in ypred])  
             ypred = torch.from_numpy(ypred)
-            ypred = torch.nn.functional.one_hot(ypred, num_classes = model.num_classes).numpy()
-            
-            ytrue = results["results"].true_label.astype('category').cat.codes.to_numpy()
+            ypred = torch.nn.functional.one_hot(ypred.to(torch.int64), num_classes = model.num_classes + 1).numpy()
+                        
+            ytrue = results["results"].true_label
+            ytrue = np.asarray([model.label_dict[y] for y in ytrue])
             ytrue = torch.from_numpy(ytrue)
-            ytrue = torch.nn.functional.one_hot(ytrue, num_classes = model.num_classes).numpy()
+
+            # Create one hot representation with extra class for test data with no bounding box
+            ytrue = torch.nn.functional.one_hot(ytrue.to(torch.int64), num_classes = model.num_classes + 1).numpy()
+
+            # Add a label for undetected birds and create confusion matrix
+            model.label_dict.update({'Bird Not Detected': 6})
+
             comet_logger.experiment.log_confusion_matrix(y_true=ytrue, y_predicted=ypred, labels = list(model.label_dict.keys()))
         except Exception as e:
             print("logger exception: {} with traceback \n {}".format(e, traceback.print_exc()))
@@ -185,5 +197,3 @@ if __name__ == "__main__":
                         empty_images_path="/blue/ewhite/everglades/Zooniverse/parsed_images/empty_test.csv",
                         save_dir="/blue/ewhite/everglades/Zooniverse/predictions/",
                         model_name = "bird_detector.pl")
-    
-    
