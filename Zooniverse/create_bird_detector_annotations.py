@@ -1,5 +1,4 @@
 #DeepForest bird detection from extracted Zooniverse predictions
-import comet_ml
 from pytorch_lightning.loggers import CometLogger
 from deepforest.callbacks import images_callback
 from deepforest import visualize
@@ -12,7 +11,6 @@ import rasterio
 import os
 import numpy as np
 import glob
-import torch
 from datetime import datetime
 from pathlib import Path
 
