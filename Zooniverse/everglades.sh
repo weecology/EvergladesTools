@@ -16,5 +16,6 @@ ulimit -c 0
 ml git
 git checkout $1
 source activate EvergladesTools
+python create_bird_detector_annotations.py
 python everglades.py
 EOT

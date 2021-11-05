@@ -1,5 +1,4 @@
 #DeepForest bird detection from extracted Zooniverse predictions
-import comet_ml
 from pytorch_lightning.loggers import CometLogger
 from deepforest.callbacks import images_callback
 from deepforest import visualize
@@ -12,8 +11,8 @@ import rasterio
 import os
 import numpy as np
 import glob
-import torch
 from datetime import datetime
+from pathlib import Path
 
 #Define shapefile utility
 def shapefile_to_annotations(shapefile, rgb_path, savedir="."):
@@ -137,20 +136,24 @@ def run(shp_dir, empty_frames_path=None, save_dir="."):
     
     #Add some empty images to train and test
     empty_frames_df = pd.read_csv(empty_frames_path, index_col=0)
-    empty_frames_df.sample(n=10)
-    
+    empty_frames_df = empty_frames_df.sample(n=100)
+
+    #Convert full paths to filenames to match other processing
+    empty_frames_df['image_path'] = [Path(path).name for path in empty_frames_df['image_path']]
+
+
     #add some blank annotations
-    empty_frames_df["xmin"] = pd.Series(dtype="Int64")
-    empty_frames_df["ymin"] = pd.Series(dtype="Int64")
-    empty_frames_df["xmax"] = pd.Series(dtype="Int64")
-    empty_frames_df["ymax"] = pd.Series(dtype="Int64")
-    empty_frames_df["label"] = pd.Series(dtype=str)
+    empty_frames_df["xmin"] = 0
+    empty_frames_df["ymin"] = 0
+    empty_frames_df["xmax"] = 0
+    empty_frames_df["ymax"] = 0
+    empty_frames_df["label"] = "Bird"
     
     empty_train, empty_test = split_test_train(empty_frames_df)
     
     #limit the number of empty
-    #train = pd.concat([train, empty_train])
-    #test = pd.concat([test, empty_test])
+    train = pd.concat([train, empty_train])
+    test = pd.concat([test, empty_test])
     
     #Enforce rounding to pixels, pandas "Int64" dtype for nullable arrays https://pandas.pydata.org/pandas-docs/stable/user_guide/integer_na.html
     train.xmin = train.xmin.astype("Int64")
@@ -174,7 +177,7 @@ def run(shp_dir, empty_frames_path=None, save_dir="."):
     
 if __name__ == "__main__":
     run(
-      shp_dir="/orange/ewhite/everglades/Zooniverse/parsed_images/",
-      empty_frames_path="/orange/ewhite/everglades/Zooniverse/parsed_images/empty_frames.csv",
-      save_dir="/orange/ewhite/everglades/Zooniverse/predictions/"
+      shp_dir="/blue/ewhite/everglades/Zooniverse/parsed_images/",
+      empty_frames_path="/blue/ewhite/everglades/Zooniverse/parsed_images/empty_frames.csv",
+      save_dir="/blue/ewhite/everglades/Zooniverse/predictions/"
     )
