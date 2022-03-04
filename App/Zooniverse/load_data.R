@@ -12,7 +12,7 @@ colonies <- st_read(
   "data/colonies.csv",
   options = c("X_POSSIBLE_NAMES=longitude","Y_POSSIBLE_NAMES=latitude"))
 samples <- st_read(
-  "./experiments/no_experiment.csv",
+  "./experiments/nest_level_species_sample_locations.csv",
   options = c("X_POSSIBLE_NAMES=long", "Y_POSSIBLE_NAMES=lat"),
   crs = 4326)
 
