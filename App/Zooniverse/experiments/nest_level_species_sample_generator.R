@@ -1,7 +1,7 @@
 library(dplyr)
 library(sf)
 
-unzip("../data/nest_detections_processed.zip", exdir = "data")
+unzip("data/nest_detections_processed.zip", exdir = "data")
 
 nests <- st_read("data/nest_detections_processed.shp") %>%
   st_transform(4326) %>%
