@@ -148,7 +148,7 @@ shinyServer(function(input, output, session) {
 
   #Reactive UI selector for Nest IDs
   output$nest_selector <- renderUI({
-    checkboxInput("show_nests", "Nests", FALSE)
+    checkboxInput("show_nests", "Nests", TRUE)
   })
 
   #Reactive UI selector for Bird IDs
