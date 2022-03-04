@@ -167,7 +167,7 @@ plot_nests<-function(df, bird_df, MAPBOX_ACCESS_TOKEN){
   m<-leaflet(data=df) %>% 
     addProviderTiles("MapBox", layerId = "mapbox_id",options = providerTileOptions(id = mapbox_tileset, minZoom = 8, maxNativeZoom=24, maxZoom = 24, accessToken = MAPBOX_ACCESS_TOKEN)) %>%
     addCircles(stroke = T,fillOpacity = 0.1,radius = 0.5,popup = ~htmlEscape(paste(round(sum_top1_s/num_obs_to,2),nest_id,sep=":"))) %>%
-    addCircles(data = bird_df, stroke = T, fillOpacity = 0, radius = 0.2, color = ~species_colors(label),
+    addCircles(data = bird_df, stroke = T, fillOpacity = 0, radius = 0.2, color = 'yellow',
                popup = ~htmlEscape(paste(round(score,2), bird_id, sep=":")))
   return(m)
 }
@@ -197,7 +197,7 @@ update_nests<-function(mapbox_tileset, df, bird_df, show_nests, show_birds,
   }
   if (show_birds) {
     map <- map %>%
-      addCircles(data = bird_df, stroke = T, fillOpacity = 0, radius = 0.2, color = ~species_colors(label),
+      addCircles(data = bird_df, stroke = T, fillOpacity = 0, radius = 0.2, color = 'yellow',
                 popup = ~htmlEscape(paste(round(score,2), bird_id, sep=":")))
   }
   map
