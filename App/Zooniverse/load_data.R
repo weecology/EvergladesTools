@@ -3,7 +3,7 @@ library(dplyr)
 source('functions.R')
 
 # Set thresholds
-min_confidence <- 0.4
+min_confidence <- 0.3
 
 #Load data
 raw_data <- load_classifications()
