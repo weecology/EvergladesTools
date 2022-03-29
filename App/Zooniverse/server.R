@@ -153,7 +153,7 @@ shinyServer(function(input, output, session) {
 
   #Reactive UI selector for Bird IDs
   output$bird_selector <- renderUI({
-    checkboxInput("show_birds", "Birds", value = TRUE)
+    checkboxInput("show_birds", "Birds", value = FALSE)
   })
 
   #Reactive UI selector for Samples IDs for evaluation/improvement experiments
