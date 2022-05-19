@@ -113,6 +113,7 @@ def detect_nests(gdf):
         return None
         
     results = pd.concat(results)
+    results = results.reset_index(drop=True)
     
     return results
         
