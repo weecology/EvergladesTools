@@ -1,9 +1,9 @@
 library(sf)
 library(dplyr)
+source('functions.R')
 
 # Set thresholds
 min_confidence <- 0.4
-min_detections <- 3
 
 #Load data
 raw_data <- load_classifications()
@@ -11,8 +11,8 @@ selected_boxes <- filter_annotations(raw_data)
 colonies <- st_read(
   "data/colonies.csv",
   options = c("X_POSSIBLE_NAMES=longitude","Y_POSSIBLE_NAMES=latitude"))
-field_nests <- st_read(
-  "https://raw.githubusercontent.com/weecology/EvergladesWadingBird/main/Nesting/field_nest_sample_locations.csv",
+samples <- st_read(
+  "./experiments/no_experiment.csv",
   options = c("X_POSSIBLE_NAMES=long", "Y_POSSIBLE_NAMES=lat"),
   crs = 4326)
 
@@ -28,19 +28,9 @@ year <- sapply(df$event, function(event) str_split(event, "-")[[1]][[1]])
 df <- mutate(df, bird_id = row_number(), year = year)
 
 #Nest predictions
-unzip("data/nest_detections.zip", exdir = "data")
-nestdf <- st_read("data/nest_detections.shp")
-nestdf$Date <- as.Date(nestdf$Date,"%m_%d_%Y")
-nestdf$tileset_id <- construct_id(nestdf$Site,nestdf$Date)
+unzip("data/nest_detections_processed.zip", exdir = "data")
+nestdf <- st_read("data/nest_detections_processed.shp")
+nestdf$first_obs <- as.Date(nestdf$first_obs,"%m_%d_%Y")
+nestdf$last_obs <- as.Date(nestdf$last_obs,"%m_%d_%Y")
 nestdf <- st_centroid(nestdf)
 nestdf <- st_transform(nestdf,4326)
-selected_indices <- nestdf %>%
-                as.data.frame() %>%
-                filter(score > min_confidence) %>%
-                group_by(Site, target_ind) %>%
-                summarize(n = n()) %>%
-                filter(n >= min_detections) %>%
-                mutate(site_index = paste(Site,target_ind)) 
-nestdf <- nestdf %>%
-  mutate(site_index = paste(Site,target_ind)) %>%
-  inner_join(selected_indices)
