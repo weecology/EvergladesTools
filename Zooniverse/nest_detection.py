@@ -2,6 +2,7 @@
 # Given a set of predictions in /orange/ewhite/everglades/predictions/, generate predicted nests
 import glob
 import geopandas
+import sys
 import rtree
 import rasterio
 import random
