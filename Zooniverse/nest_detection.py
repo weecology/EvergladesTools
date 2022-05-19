@@ -161,16 +161,16 @@ def count_max_consec_detects(nest_data, date_data):
 def process_nests(nests_data, savedir, min_score=0.3, min_detections=3, min_consec_detects = 1):
     """Process nests into a one row per nest table"""
     dates_data = nests_data.groupby(['Site', 'Year']).agg({'Date': lambda x: x.unique().tolist()}).reset_index()
-    target_inds = nests_data['target_ind'].unique()
+    target_inds = nests_data['target_index'].unique()
     nests = []
     for target_ind in target_inds:
-        nest_data = nests_data[(nests_data['target_ind'] == target_ind) & (nests_data['score'] >= min_score)]
+        nest_data = nests_data[(nests_data['target_index'] == target_ind) & (nests_data['score'] >= min_score)]
         date_data = dates_data[(dates_data['Site'] == nests_data['Site'][0]) & (dates_data['Year'] == nests_data['Year'][0])]
         num_consec_detects = count_max_consec_detects(nest_data, date_data)
         if len(nest_data) >= min_detections or num_consec_detects >= min_consec_detects:
-            summed_scores = nest_data.groupby(['Site', 'Year', 'target_ind', 'label']).score.agg(['sum', 'count'])
+            summed_scores = nest_data.groupby(['Site', 'Year', 'target_index', 'label']).score.agg(['sum', 'count'])
             top_score_data = summed_scores[summed_scores['sum'] == max(summed_scores['sum'])].reset_index()
-            nest_info = nest_data.groupby(['Site', 'Year', 'target_ind']).agg({'Date': ['min', 'max', 'count'], 
+            nest_info = nest_data.groupby(['Site', 'Year', 'target_index']).agg({'Date': ['min', 'max', 'count'], 
                                                                             'matched_xm': ['mean'],
                                                                             'matched_ym': ['mean'],
                                                                             'xmax': ['mean'],
@@ -318,7 +318,7 @@ if __name__=="__main__":
         
     #Load all shapefiles in this dir
     gdf = load_files("/blue/ewhite/everglades/predictions/{}/{}/".format(year, site))  
-    nest_shp = detect_nests(gdf)
-    nest_shp["Year"] = year
-    nest_shp["Site"] = site    
-    processed_nests_path = process_nests(nest_shp, savedir="/blue/ewhite/everglades/nests/{}/{}/".format(year, site))
+    nests_data = detect_nests(gdf)
+    nests_data["Year"] = year
+    nests_data["Site"] = site    
+    processed_nests_path = process_nests(nests_data, savedir="/blue/ewhite/everglades/nests/{}/{}/".format(year, site))
