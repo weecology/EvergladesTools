@@ -5,7 +5,6 @@ import geopandas
 import rtree
 import rasterio
 import random
-import sys
 import os
 import pandas as pd
 import cv2
@@ -318,8 +317,7 @@ if __name__=="__main__":
         
     #Load all shapefiles in this dir
     gdf = load_files("/blue/ewhite/everglades/predictions/{}/{}/".format(year, site))  
-    gdf["Year"] = year
-    gdf["Sute"] = site
-    
     nest_shp = detect_nests(gdf)
+    nest_shp["Year"] = year
+    nest_shp["Site"] = site    
     processed_nests_path = process_nests(nest_shp, savedir="/blue/ewhite/everglades/nests/{}/{}/".format(year, site))
