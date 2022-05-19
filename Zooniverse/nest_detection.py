@@ -5,6 +5,7 @@ import geopandas
 import rtree
 import rasterio
 import random
+import sys
 import os
 import pandas as pd
 import cv2
