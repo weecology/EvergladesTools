@@ -21,46 +21,11 @@ from PIL import Image, ImageDraw
 def load_files(dirname):
     """Load shapefiles and concat into large frame"""
     shapefiles = glob.glob(dirname + "*.shp")
-    
-    #load all shapefiles to create a dataframe
-    df = []
-    for x in shapefiles:
-        try:
-        # Catch and skip badly structured file names
-        # TODO: fix file naming issues so we don't need this
-            print(x)
-            eventdf = geopandas.read_file(x)
-            eventdf["Site"] = get_site(x)
-            eventdf["Date"] = get_date(x)
-            eventdf["Year"] = get_year(x)
-            df.append(eventdf)
-        except IndexError as e:
-            print("Filename issue:")
-            print(e)
-    df = geopandas.GeoDataFrame(pd.concat(df, ignore_index=True))
-    df.crs = eventdf.crs
+    df_list = [geopandas.read_file(x) for x in shapefiles]
+    df = geopandas.GeoDataFrame(pd.concat(df_list, ignore_index=True))
+    df.crs = df_list[0].crs
     
     return df
-    
-def get_site(x):
-    """parse filename to return site name"""
-    basename = os.path.basename(x)
-    site = basename.split("_")[0]
-    return site
-
-def get_date(x):
-    """parse filename to return event name"""
-    basename = os.path.basename(x)
-    event = basename.split("_")[1:4]
-    event = "_".join(event)
-    
-    return event
-
-def get_year(x):
-    "parse filename to return the year of sampling"
-    basename = os.path.basename(x)
-    year = basename.split("_")[3]
-    return year
 
 def calculate_IoUs(geom, match):
     """Calculate intersection-over-union scores for a pair of boxes"""
@@ -70,7 +35,7 @@ def calculate_IoUs(geom, match):
     
     return iou
 
-def compare_site(gdf):
+def detect_nests(gdf):
     """Iterate over a dataframe and check rows"""
     results = []
     claimed_indices = []
@@ -133,29 +98,7 @@ def check_overlap(geom, gdf):
     matches = gdf.intersects(geom)
     
     return matches
-    
-def detect_nests(dirname, savedir):
-    """Given a set of shapefiles, track time series of overlaps and save a shapefile of detected boxes"""
-    
-    df = load_files(dirname)
-        
-    grouped = df.groupby(["Site", "Year"])
-    results = []
-    for name, group in grouped:
-        print(f"Processing {name}")
-        site_results = compare_site(group)
-        if site_results is not None:
-            site_results["Site"] = name[0]
-            site_results["Year"] = name[1]
-            results.append(site_results)
-    
-    result_shp = geopandas.GeoDataFrame(pd.concat(results, ignore_index=True))
-    result_shp.crs = df.crs
-    
-    filename = "{}/nest_detections.shp".format(savedir)
-    result_shp.to_file(filename)
 
-    return filename
 
 def count_max_consec_detects(nest_data, date_data):
     """Determine the maximum number of consecutive bird detections"""
@@ -192,9 +135,8 @@ def count_max_consec_detects(nest_data, date_data):
 
     return max_consec_detects
 
-def process_nests(nest_file, savedir, min_score=0.3, min_detections=3, min_consec_detects = 1):
+def process_nests(nests_data, savedir, min_score=0.3, min_detections=3, min_consec_detects = 1):
     """Process nests into a one row per nest table"""
-    nests_data = geopandas.read_file(nest_file)
     dates_data = nests_data.groupby(['Site', 'Year']).agg({'Date': lambda x: x.unique().tolist()}).reset_index()
     target_inds = nests_data['target_ind'].unique()
     nests = []
@@ -230,8 +172,9 @@ def process_nests(nest_file, savedir, min_score=0.3, min_detections=3, min_conse
     nests_shp = geopandas.GeoDataFrame(nests,
                                        geometry=geopandas.points_from_xy(nests.xmean, nests.ymean))
     nests_shp.crs = nests_data.crs
-    save_path = f"{savedir}/nest_detections_processed.shp"
+    save_path = f"{savedir}/nest_detections.shp"
     nests_shp.to_file(save_path)
+    
     return(save_path)
 
 def find_rgb_paths(site, paths):
@@ -251,7 +194,8 @@ def crop(rgb_path, geom, extend_box=3):
     
     numpy_array = src.read(window=window)
     numpy_array_rgb = np.rollaxis(numpy_array, 0,3)    
-    numpy_array_bgr = numpy_array_rgb[:,:,::-1]    
+    numpy_array_bgr = numpy_array_rgb[:,:,::-1]   
+    
     return numpy_array_bgr
     
 def crop_images(df, rgb_images):
@@ -341,33 +285,18 @@ def extract_nests(filename, rgb_pool, savedir, upload=False):
     if upload:
         random.shuffle(subjects)
         subject_set.add(subjects)
-            
-def find_files():
-    paths = glob.glob("/orange/ewhite/everglades/utm_projected/*.tif")
-    paths = [x for x in paths if not "Cypress" in x]
-    paths = [x for x in paths if not "Joule_05_05_2021" in x] # Joul 05_05_2021 is current not projected properly
-    
-    return paths
 
 if __name__=="__main__":
-    nest_shp = Path(detect_nests("/blue/ewhite/everglades/predictions/", savedir="../App/Zooniverse/data/"))
-    processed_nests_shp = Path(process_nests(nest_shp, savedir="../App/Zooniverse/data/"))
-
     #Write nests into folders of clips
-    rgb_pool = find_files()
-    extract_nests(nest_shp, rgb_pool=rgb_pool, savedir="/orange/ewhite/everglades/nest_crops/", upload=False)
-
-    # Zip the shapefiles for storage efficiency
-    with ZipFile("../App/Zooniverse/data/nest_detections.zip", 'w', ZIP_DEFLATED) as zip:
-        for ext in ['.cpg', '.dbf', '.prj', '.shp', '.shx']:
-            focal_file = nest_shp.with_suffix(ext)
-            file_name = focal_file.name
-            zip.write(focal_file, arcname=file_name)
-            os.remove(focal_file)
-
-    with ZipFile("../App/Zooniverse/data/nest_detections_processed.zip", 'w', ZIP_DEFLATED) as zip:
-        for ext in ['.cpg', '.dbf', '.prj', '.shp', '.shx']:
-            focal_file = processed_nests_shp.with_suffix(ext)
-            file_name = focal_file.name
-            zip.write(focal_file, arcname=file_name)
-            os.remove(focal_file)
+    path = sys.argv[1]
+    split_path = os.path.normpath(path).split(os.path.sep)
+    year = split_path[5]
+    site = split_path[6]
+        
+    #Load all shapefiles in this dir
+    gdf = load_files("/blue/ewhite/everglades/predictions/{}/{}/".format(year, site))  
+    gdf["year"] = year
+    gdf["site"] = site
+    
+    nest_shp = detect_nests(gdf)
+    processed_nests_path = process_nests(nest_shp, savedir="/blue/ewhite/everglades/nests/{}/{}/".format(year, site))
