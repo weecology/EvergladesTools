@@ -159,7 +159,7 @@ def count_max_consec_detects(nest_data, date_data):
 
 def process_nests(nests_data, savedir, min_score=0.3, min_detections=3, min_consec_detects = 1):
     """Process nests into a one row per nest table"""
-    dates_data = nests_data.agg({'Date': lambda x: x.unique().tolist()}).reset_index()
+    dates_data = nests_data.groupby(['Site', 'Year']).agg({'Date': lambda x: x.unique().tolist()}).reset_index()
     target_inds = nests_data['target_ind'].unique()
     nests = []
     for target_ind in target_inds:
@@ -317,8 +317,8 @@ if __name__=="__main__":
         
     #Load all shapefiles in this dir
     gdf = load_files("/blue/ewhite/everglades/predictions/{}/{}/".format(year, site))  
-    gdf["year"] = year
-    gdf["site"] = site
+    gdf["Year"] = year
+    gdf["Sute"] = site
     
     nest_shp = detect_nests(gdf)
     processed_nests_path = process_nests(nest_shp, savedir="/blue/ewhite/everglades/nests/{}/{}/".format(year, site))
