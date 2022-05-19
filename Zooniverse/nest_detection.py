@@ -19,12 +19,34 @@ from pathlib import Path
 from rasterio.windows import from_bounds
 from PIL import Image, ImageDraw
 
+def get_date(x):
+    """parse filename to return event name"""
+    basename = os.path.basename(x)
+    event = basename.split("_")[1:4]
+    event = "_".join(event)
+    
+    return event
+
 def load_files(dirname):
     """Load shapefiles and concat into large frame"""
     shapefiles = glob.glob(dirname + "*.shp")
-    df_list = [geopandas.read_file(x) for x in shapefiles]
-    df = geopandas.GeoDataFrame(pd.concat(df_list, ignore_index=True))
-    df.crs = df_list[0].crs
+    shapefiles = [x for x in shapefiles if "projected" in x]
+    
+    #load all shapefiles to create a dataframe
+    df = []
+    for x in shapefiles:
+        try:
+        # Catch and skip badly structured file names
+        # TODO: fix file naming issues so we don't need this
+            print(x)
+            eventdf = geopandas.read_file(x)
+            eventdf["Date"] = get_date(x)
+            df.append(eventdf)
+        except IndexError as e:
+            print("Filename issue:")
+            print(e)
+    df = geopandas.GeoDataFrame(pd.concat(df, ignore_index=True))
+    df.crs = eventdf.crs
     
     return df
 
