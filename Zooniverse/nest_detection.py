@@ -172,12 +172,12 @@ def process_nests(nests_data, savedir, min_score=0.3, min_detections=3, min_cons
             summed_scores = nest_data.groupby(['Site', 'Year', 'target_index', 'label']).score.agg(['sum', 'count'])
             top_score_data = summed_scores[summed_scores['sum'] == max(summed_scores['sum'])].reset_index()
             nest_info = nest_data.groupby(['Site', 'Year', 'target_index']).agg({'Date': ['min', 'max', 'count'], 
-                                                                            'matched_xmax': ['mean'],
-                                                                            'matched_ymax': ['mean'],
+                                                                            'matched_xmin': ['mean'],
+                                                                            'matched_ymin': ['mean'],
                                                                             'xmax': ['mean'],
                                                                             'matched__1': ['mean']}).reset_index()
-            xmean = (nest_info['matched_xmax']['mean'][0] + nest_info['xmax']['mean']) / 2
-            ymean = (nest_info['matched_ymax']['mean'][0] + nest_info['matched__1']['mean']) / 2
+            xmean = (nest_info['matched_xmin']['mean'][0] + nest_info['xmax']['mean']) / 2
+            ymean = (nest_info['matched_ymin']['mean'][0] + nest_info['matched__1']['mean']) / 2
             nests.append([target_ind,
                         nest_info['Site'][0],
                         nest_info['Year'][0],
