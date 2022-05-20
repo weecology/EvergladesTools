@@ -105,7 +105,7 @@ def detect_nests(gdf):
         #add target info to match
         matches = matches.append(row)
         matches["target_index"] = index
-        matches = matches.rename(columns={"xmin":"matched_xmin","max":"matched_xmax","ymin":"matched_ymin","ymax":"matched_ymax"})
+        matches = matches.rename(columns={"xmin":"matched_xmin","xmax":"matched_xmax","ymin":"matched_ymin","ymax":"matched_ymax"})
 
         results.append(matches)
     
@@ -176,8 +176,8 @@ def process_nests(nests_data, savedir, min_score=0.3, min_detections=3, min_cons
                                                                             'matched_ymin': ['mean'],
                                                                             'xmax': ['mean'],
                                                                             'matched__1': ['mean']}).reset_index()
-            xmean = (nest_info['matched_xmin']['mean'][0] + nest_info['xmax']['mean']) / 2
-            ymean = (nest_info['matched_ymin']['mean'][0] + nest_info['matched__1']['mean']) / 2
+            xmean = (nest_info['matched_xmin']['mean'][0] + nest_info['matched_xmax']['mean']) / 2
+            ymean = (nest_info['matched_ymin']['mean'][0] + nest_info['matched_ymax']['mean']) / 2
             nests.append([target_ind,
                         nest_info['Site'][0],
                         nest_info['Year'][0],
