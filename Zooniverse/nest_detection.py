@@ -321,5 +321,8 @@ if __name__=="__main__":
     gdf = load_files("/blue/ewhite/everglades/predictions/{}/{}/".format(year, site))  
     nests_data = detect_nests(gdf)
     nests_data["Year"] = year
-    nests_data["Site"] = site    
+    nests_data["Site"] = site 
+    
+    print(nests_data.columns)
+    
     processed_nests_path = process_nests(nests_data, savedir="/blue/ewhite/everglades/nests/{}/{}/".format(year, site))
