@@ -322,7 +322,11 @@ if __name__=="__main__":
     nests_data = detect_nests(gdf)
     nests_data["Year"] = year
     nests_data["Site"] = site 
-    
-    print(nests_data.columns)
+        
+    #create save dir if does not exist
+    try:
+        os.makedirs("/blue/ewhite/everglades/nests/{}/{}/".format(year, site))
+    except:
+        pass
     
     processed_nests_path = process_nests(nests_data, savedir="/blue/ewhite/everglades/nests/{}/{}/".format(year, site))
