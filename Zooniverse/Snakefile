@@ -43,4 +43,4 @@ rule predict_nests:
     output:
         "/blue/ewhite/everglades/nests/{year}/{site}/nest_detections.shp"
     shell:
-        "python nest_detection.py"
+        "python nest_detection.py {input}"
