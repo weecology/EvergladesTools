@@ -174,8 +174,8 @@ def process_nests(nests_data, savedir, min_score=0.3, min_detections=3, min_cons
             nest_info = nest_data.groupby(['Site', 'Year', 'target_index']).agg({'Date': ['min', 'max', 'count'], 
                                                                             'matched_xmin': ['mean'],
                                                                             'matched_ymin': ['mean'],
-                                                                            'xmax': ['mean'],
-                                                                            'matched__1': ['mean']}).reset_index()
+                                                                            'matched_xmax': ['mean'],
+                                                                            'matched_ymax': ['mean']}).reset_index()
             xmean = (nest_info['matched_xmin']['mean'][0] + nest_info['matched_xmax']['mean']) / 2
             ymean = (nest_info['matched_ymin']['mean'][0] + nest_info['matched_ymax']['mean']) / 2
             nests.append([target_ind,
