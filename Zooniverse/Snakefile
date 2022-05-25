@@ -9,7 +9,6 @@ rule all:
         expand("/blue/ewhite/everglades/predictions/{year}/{site}/{flight}_projected.shp",
                zip, site=ORTHOMOSAICS.site, year = ORTHOMOSAICS.year, flight=ORTHOMOSAICS.flight)
 
-
 rule project_mosaics:
     input:
         "/blue/ewhite/everglades/orthomosaics/{year}/{site}/{flight}.tif"
@@ -30,9 +29,9 @@ rule predict_birds:
 
 rule predict_nests:
     input:
-        "/blue/ewhite/everglades/predictions/{year}/{site}/"
+        "/blue/ewhite/everglades/predictions/2021/Joule/"
     output:
-        "/blue/ewhite/everglades/nests/{year}/{site}/nest_detections.shp"
+        "/blue/ewhite/everglades/nests/2021/Joule/nest_detections.shp"
     shell:
         "python nest_detection.py {input}"
         
