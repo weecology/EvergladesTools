@@ -28,6 +28,14 @@ rule predict_birds:
     shell:
         "python predict.py {input}"
 
+rule predict_nests:
+    input:
+        "/blue/ewhite/everglades/predictions/{year}/{site}/"
+    output:
+        "/blue/ewhite/everglades/nests/{year}/{site}/nest_detections.shp"
+    shell:
+        "python nest_detection.py {input}"
+        
 rule combine_predicted_birds:
     input:
         expand("/blue/ewhite/everglades/predictions/{year}/{site}/{flight}_projected.shp",
@@ -37,10 +45,3 @@ rule combine_predicted_birds:
     shell:
         "python combine_bird_predictions.py"
 
-rule predict_nests:
-    input:
-        "/blue/ewhite/everglades/predictions/{year}/{site}/"
-    output:
-        "/blue/ewhite/everglades/nests/{year}/{site}/nest_detections.shp"
-    shell:
-        "python nest_detection.py {input}"
