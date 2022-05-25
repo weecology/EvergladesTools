@@ -3,14 +3,6 @@ import os
 
 
 ORTHOMOSAICS = glob_wildcards("/blue/ewhite/everglades/orthomosaics/{year}/{site}/{flight}.tif")
-
-rule predict_nests:
-    input:
-        "/blue/ewhite/everglades/predictions/{year}/{site}/"
-    output:
-        "/blue/ewhite/everglades/nests/{year}/{site}/nest_detections.shp"
-    shell:
-        "python nest_detection.py {input}"
         
 rule all:
     input:
@@ -44,3 +36,11 @@ rule combine_predicted_birds:
         "/blue/ewhite/everglades/EvergladesTools/App/Zooniverse/data/PredictedBirds.zip"
     shell:
         "python combine_bird_predictions.py"
+        
+rule predict_nests:
+    input:
+        expand("/blue/ewhite/everglades/predictions/{year}/{site}")
+    output:
+        "/blue/ewhite/everglades/nests/{year}/{site}/nest_detections.shp"
+    shell:
+        "python nest_detection.py {input}"
