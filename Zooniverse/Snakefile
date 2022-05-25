@@ -1,6 +1,13 @@
 import glob
 import os
 
+rule predict_nests:
+    input:
+        "/blue/ewhite/everglades/predictions/2021/Joule/"
+    output:
+        "/blue/ewhite/everglades/nests/2021/Joule/nest_detections.shp"
+    shell:
+        "python nest_detection.py {input}"
 ORTHOMOSAICS = glob_wildcards("/blue/ewhite/everglades/orthomosaics/{year}/{site}/{flight}.tif")
 
 rule all:
@@ -26,14 +33,6 @@ rule predict_birds:
         gpu=1
     shell:
         "python predict.py {input}"
-
-rule predict_nests:
-    input:
-        "/blue/ewhite/everglades/predictions/2021/Joule/"
-    output:
-        "/blue/ewhite/everglades/nests/2021/Joule/nest_detections.shp"
-    shell:
-        "python nest_detection.py {input}"
         
 rule combine_predicted_birds:
     input:
