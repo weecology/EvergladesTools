@@ -39,7 +39,7 @@ rule combine_predicted_birds:
         
 rule predict_nests:
     input:
-        "/blue/ewhite/everglades/predictions/{year}/{site}"
+        directory("/blue/ewhite/everglades/predictions/{year}/{site}")
     output:
         "/blue/ewhite/everglades/nests/{year}/{site}/nest_detections.shp"
     shell:
