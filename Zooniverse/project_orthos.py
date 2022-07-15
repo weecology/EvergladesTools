@@ -10,8 +10,14 @@ def utm_project_raster(path, year, site, savedir="/blue/ewhite/everglades/projec
 
     #Everglades UTM Zone
     dst_crs = 32617
-
+    
     with rasterio.open(path) as src:
+        #Check that raster has a source crs.
+        if src.crs is None:
+            raise AssertionError(
+                '{} has no coordinate reference and cannot be projected. This may be due to a lack of ground control points at the colony'.format(path)
+            )
+        
         transform, width, height = calculate_default_transform(
             src.crs, dst_crs, src.width, src.height, *src.bounds)
         kwargs = src.meta.copy()
