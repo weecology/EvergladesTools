@@ -16,7 +16,10 @@ rule project_mosaics:
     output:
         "/blue/ewhite/everglades/projected_mosaics/{year}/{site}/{flight}_projected.tif"
     shell:
-        "python project_orthos.py {input}"
+        try:
+            "python project_orthos.py {input}"
+        except:
+            touch({output})
 
 rule predict_birds:
     input:
@@ -26,7 +29,10 @@ rule predict_birds:
     resources:
         gpu=1
     shell:
-        "python predict.py {input}"
+        try:
+            "python predict.py {input}"
+        except:
+            touch({output})
         
 rule combine_predicted_birds:
     input:
