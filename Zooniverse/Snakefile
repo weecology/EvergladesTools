@@ -15,7 +15,7 @@ rule project_mosaics:
         "/blue/ewhite/everglades/orthomosaics/{year}/{site}/{flight}.tif"
     output:
         "/blue/ewhite/everglades/projected_mosaics/{year}/{site}/{flight}_projected.tif"
-    shell:
+    run:
         try:
             "python project_orthos.py {input}"
         except:
@@ -28,7 +28,7 @@ rule predict_birds:
         "/blue/ewhite/everglades/predictions/{year}/{site}/{flight}_projected.shp"
     resources:
         gpu=1
-    shell:
+    run:
         try:
             "python predict.py {input}"
         except:
