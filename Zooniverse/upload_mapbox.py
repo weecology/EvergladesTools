@@ -52,8 +52,12 @@ def upload(path):
           mbtiles_filename = "/blue/ewhite/everglades/mapbox/{}.mbtiles".format(basename)
      
           #if not os.path.exists(mbtiles_filename):
+          #Skip existing files
+          if os.path.exists(mbtiles_filename):
+               return mbtiles_filename
+          
           subprocess.run(["touch", mbtiles_filename]) #The rio mbtiles command apparently requires that the output file already exist
-          subprocess.run(["rio", "mbtiles", out_filename, "-o", mbtiles_filename, "--zoom-levels", "17..24", "-j", "4", "-f", "PNG", "--overwrite"])
+          subprocess.run(["rio", "mbtiles", out_filename, "-o", mbtiles_filename, "--zoom-levels", "17..24", "-j", "4", "-f", "PNG"])
 
           ##Generate tiles
           subprocess.run(["mapbox", "upload", f"bweinstein.{basename}", mbtiles_filename])
