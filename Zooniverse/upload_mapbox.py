@@ -57,7 +57,7 @@ def upload(path):
                return mbtiles_filename
           
           subprocess.run(["touch", mbtiles_filename]) #The rio mbtiles command apparently requires that the output file already exist
-          subprocess.run(["rio", "mbtiles", out_filename, "-o", mbtiles_filename, "--zoom-levels", "17..24", "-j", "4", "-f", "PNG"])
+          subprocess.run(["rio", "mbtiles", out_filename, "-o", mbtiles_filename, "--zoom-levels", "17..24", "-j", "4", "-f", "PNG", "--overwrite"])
 
           ##Generate tiles
           subprocess.run(["mapbox", "upload", f"bweinstein.{basename}", mbtiles_filename])
