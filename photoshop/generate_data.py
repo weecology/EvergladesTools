@@ -60,8 +60,8 @@ def choose_box(group, df):
         return  group
     else:
         #Find centroid
-        individual_id = group.individual.unique()[0]
-        stem_location = df[df["individual"]==individual_id].geometry.iloc[0]
+        individual_id = group.ItemNumber.unique()[0]
+        stem_location = df[df["ItemNumber"]==individual_id].geometry.iloc[0]
         closest_stem = group.centroid.distance(stem_location).sort_values().index[0]
         
         return group.loc[[closest_stem]]
@@ -98,6 +98,7 @@ def crop(annotations, image_path, base_dir):
 def run(paths, image_pool, base_dir):
     """For a given annotation file, predict bird detections, associate points with boxes and save a .csv for training"""
     for path in paths:
+        print(path)
         df = load(path)
         basename = os.path.splitext(os.path.basename(path))[0] 
         image_path = lookup_raster(image_pool, basename)
