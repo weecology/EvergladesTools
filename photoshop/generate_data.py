@@ -12,8 +12,8 @@ def load(path):
     df["image_path"] = "{}.tif".format(basename)
     
     #Create geospatial frame
-    df["x"] = df.Xpos.apply(lambda x: int(x.split(" ")[0]))
-    df["y"] = df.Ypos.apply(lambda x: int(x.split(" ")[0]))
+    df["x"] = df.Xpos.apply(lambda x: int(float(x.split(" ")[0])))
+    df["y"] = df.Ypos.apply(lambda x: int(float(x.split(" ")[0])))
     df['geometry'] = df.apply(lambda x: shapely.geometry.Point(x.x,x.y), axis=1)
     df = gpd.GeoDataFrame(df, geometry='geometry')    
     
