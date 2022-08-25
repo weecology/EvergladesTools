@@ -21,7 +21,9 @@ def load(path):
     
 def lookup_raster(image_pool, basename):
     try:
-        return [x for x in image_pool if basename in x][0] 
+        tifs = [x for x in image_pool if basename in x]
+        tifs = [x for x in tifs if not "projected" in x]
+        return tifs[0] 
     except:
         return None
 
@@ -52,7 +54,6 @@ def create_boxes(df, size=30):
     fixed_boxes["box_id"] = fixed_boxes.index.to_series().apply(lambda x: "fixed_box_{}".format(x))
     
     return fixed_boxes
-
 
 def choose_box(group, df):
     """Given a set of overlapping bounding boxes and predictions, just choose the closest to stem box by centroid if there are multiples"""
