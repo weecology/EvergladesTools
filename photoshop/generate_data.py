@@ -4,6 +4,7 @@ from deepforest.preprocess import split_raster
 from deepforest import main
 import os
 import geopandas as gpd
+import glob
 
 def load(path):
     basename = os.path.splitext(os.path.basename(path))[0]        
@@ -19,7 +20,10 @@ def load(path):
     return df
     
 def lookup_raster(image_pool, basename):
-    return [x for x in image_pool if basename in x][0]
+    try:
+        return [x for x in image_pool if basename in x][0] 
+    except:
+        return None
 
 def predict_boxes(image_path):
     m = main.deepforest()
@@ -97,6 +101,8 @@ def run(paths, image_pool, base_dir):
         df = load(path)
         basename = os.path.splitext(os.path.basename(path))[0] 
         image_path = lookup_raster(image_pool, basename)
+        if image_path is None:
+            continue
         boxes = predict_boxes(image_path)
         merged_boxes = points_to_boxes(df, boxes)
         
@@ -107,3 +113,10 @@ def run(paths, image_pool, base_dir):
     annotations.to_csv("{}/split_annotations.csv".format(base_dir))
     
     return annotations
+
+if __name__ == "__main__":    
+    paths = glob.glob("/home/benweinstein/Documents/EvergladesTools/photoshop/csvs/*")
+    image_pool = glob.glob("/blue/ewhite/everglades/orthomosaics/*", recursive=True)
+    base_dir = "/blue/ewhite/everglades/photoshop_annotations/"
+    
+    run(paths, image_pool, base_dir)    
