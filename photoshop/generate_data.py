@@ -115,7 +115,7 @@ def run(paths, image_pool, base_dir):
     return annotations
 
 if __name__ == "__main__":    
-    paths = glob.glob("/home/benweinstein/Documents/EvergladesTools/photoshop/csvs/*")
+    paths = glob.glob("/home/b.weinstein/EvergladesTools/photoshop/csvs/*")
     image_pool = glob.glob("/blue/ewhite/everglades/orthomosaics/*", recursive=True)
     base_dir = "/blue/ewhite/everglades/photoshop_annotations/"
     
