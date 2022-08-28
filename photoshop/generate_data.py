@@ -104,17 +104,18 @@ def run(paths, image_pool, base_dir):
         basename = os.path.splitext(os.path.basename(path))[0] 
         image_path = lookup_raster(image_pool, basename)
         if image_path is None:
+            print("Cannot find matching raster for {}".format(x))
             continue
-        boxes = predict_boxes(image_path)
-        merged_boxes = points_to_boxes(df, boxes)
+        #boxes = predict_boxes(image_path)
+        #merged_boxes = points_to_boxes(df, boxes)
         
-        #Format for deepforest image_path, xmin, ymin, xmax, ymax, label
-        merged_boxes = pd.concat([merged_boxes[["image_path","label"]],merged_boxes.bounds], 1).rename(columns={"minx": "xmin","miny":"ymin","maxx":"xmax","maxy":"ymax"})
-        merged_boxes.to_csv("{}/raw_annotations.csv".format(base_dir))
-        annotations = crop(annotations="{}/raw_annotations.csv".format(base_dir), image_path=image_path, base_dir=base_dir)
-    annotations.to_csv("{}/split_annotations.csv".format(base_dir))
+        ##Format for deepforest image_path, xmin, ymin, xmax, ymax, label
+        #merged_boxes = pd.concat([merged_boxes[["image_path","label"]],merged_boxes.bounds], 1).rename(columns={"minx": "xmin","miny":"ymin","maxx":"xmax","maxy":"ymax"})
+        #merged_boxes.to_csv("{}/raw_annotations.csv".format(base_dir))
+        #annotations = crop(annotations="{}/raw_annotations.csv".format(base_dir), image_path=image_path, base_dir=base_dir)
+    ##annotations.to_csv("{}/split_annotations.csv".format(base_dir))
     
-    return annotations
+    #return annotations
 
 if __name__ == "__main__":    
     paths = glob.glob("/home/b.weinstein/EvergladesTools/photoshop/csvs/*")
