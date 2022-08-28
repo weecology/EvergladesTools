@@ -104,7 +104,7 @@ def run(paths, image_pool, base_dir):
         basename = os.path.splitext(os.path.basename(path))[0] 
         image_path = lookup_raster(image_pool, basename)
         if image_path is None:
-            print("Cannot find matching raster for {}".format(x))
+            print("Cannot find matching raster for {}".format(path))
             continue
         #boxes = predict_boxes(image_path)
         #merged_boxes = points_to_boxes(df, boxes)
