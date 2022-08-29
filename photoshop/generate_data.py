@@ -98,6 +98,8 @@ def crop(annotations, image_path, base_dir):
 
 def run(paths, image_pool, base_dir):
     """For a given annotation file, predict bird detections, associate points with boxes and save a .csv for training"""
+    
+    crop_annotations = []
     for path in paths:
         print(path)
         df = load(path)
@@ -112,9 +114,10 @@ def run(paths, image_pool, base_dir):
         merged_boxes = pd.concat([merged_boxes[["image_path","label"]],merged_boxes.bounds], 1).rename(columns={"minx": "xmin","miny":"ymin","maxx":"xmax","maxy":"ymax"})
         merged_boxes.to_csv("{}/raw_annotations.csv".format(base_dir))
         annotations = crop(annotations="{}/raw_annotations.csv".format(base_dir), image_path=image_path, base_dir=base_dir)
-    annotations.to_csv("{}/split_annotations.csv".format(base_dir))
+        crop_annotations.append(annotations)
+    crop_annotations.to_csv("{}/split_annotations.csv".format(base_dir))
     
-    return annotations
+    return crop_annotations
 
 if __name__ == "__main__":    
     paths = glob.glob("/home/b.weinstein/EvergladesTools/photoshop/csvs/*")
