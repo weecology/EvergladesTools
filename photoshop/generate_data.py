@@ -115,6 +115,8 @@ def run(paths, image_pool, base_dir):
         merged_boxes.to_csv("{}/raw_annotations.csv".format(base_dir))
         annotations = crop(annotations="{}/raw_annotations.csv".format(base_dir), image_path=image_path, base_dir=base_dir)
         crop_annotations.append(annotations)
+        
+    crop_annotations["label"] = "Bird"
     crop_annotations.to_csv("{}/split_annotations.csv".format(base_dir))
     
     return crop_annotations
