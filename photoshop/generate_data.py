@@ -111,12 +111,13 @@ def run(paths, image_pool, base_dir):
         merged_boxes = points_to_boxes(df, boxes)
         
         #Format for deepforest image_path, xmin, ymin, xmax, ymax, label
+        merged_boxes[["label"]] = merged_boxes[["Species"]]
         merged_boxes = pd.concat([merged_boxes[["image_path","label"]],merged_boxes.bounds], 1).rename(columns={"minx": "xmin","miny":"ymin","maxx":"xmax","maxy":"ymax"})
         merged_boxes.to_csv("{}/raw_annotations.csv".format(base_dir))
         annotations = crop(annotations="{}/raw_annotations.csv".format(base_dir), image_path=image_path, base_dir=base_dir)
         crop_annotations.append(annotations)
-        
-    crop_annotations["label"] = "Bird"
+    
+    crop_annotations = pd.concat(crop_annotations)
     crop_annotations.to_csv("{}/split_annotations.csv".format(base_dir))
     
     return crop_annotations
