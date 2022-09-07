@@ -44,7 +44,7 @@ def points_to_boxes(df, boxes):
     return merged_boxes    
     
 def crop(annotations, image_path, base_dir):
-    split_annotations = split_raster(annotations_file=annotations, path_to_raster=image_path, patch_size=1500, patch_overlap=0, base_dir=base_dir)
+    split_annotations = split_raster(annotations_file=annotations, path_to_raster=image_path, patch_size=1500, patch_overlap=0, base_dir=base_dir, allow_empty=True)
     
     return split_annotations
 
