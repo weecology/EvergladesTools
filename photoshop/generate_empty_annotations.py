@@ -67,10 +67,14 @@ def run(paths, image_pool, base_dir):
         merged_boxes.to_csv("{}/raw_annotations_{}.csv".format(base_dir, basename))
         annotations = crop(annotations="{}/raw_annotations_{}.csv".format(base_dir, basename), image_path=image_path, base_dir=base_dir)
         print("There are {} annotations in the cropped csv".format(annotations.shape[0]))
+        annotations.to_csv("{}/crop_annotations_{}.csv".format(base_dir, basename))
         crop_annotations.append(annotations)
     
     crop_annotations = pd.concat(crop_annotations)
-    crop_annotations = crop_annotations[crop_annotations.Species.isnull()]
+    images_to_keep = crop_annotations[crop_annotations.Species.isnull()].image_path.unique()
+    has_true_positive = crop_annotations[~crop_annotations.Species.isnull()].image_path.unique()
+    images_to_keep = [x for x in images_to_keep if x not in has_true_positive]
+    crop_annotations = crop_annotations[crop_annotations.image_path.isin(images_to_keep)]
     crop_annotations.to_csv("{}/inferred_empty_annotations.csv".format(base_dir))
     
     return crop_annotations
