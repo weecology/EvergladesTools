@@ -2,10 +2,17 @@
 import pytest
 import glob
 import tempfile
-from generate_data import *
-import pandas as pd
+import generate_data
+import generate_empty_annotations
 
-image_pool = glob.glob("*.tif")
-base_dir = tempfile.TemporaryDirectory()
-paths = ["Joule_03_14_2022_crop.csv"]
-df = run(paths, image_pool=image_pool, base_dir=base_dir.name)
+def test_generate_data():
+    image_pool = glob.glob("*.tif")
+    base_dir = tempfile.TemporaryDirectory()
+    paths = ["/Users/benweinstein/Documents/EvergladesTools/photoshop/tests/Joule_03_14_2022_crop.csv"]
+    df = generate_data.run(paths, image_pool=image_pool, base_dir=base_dir.name)
+
+def test_generate_empty():
+    image_pool = glob.glob("*.tif")
+    base_dir = tempfile.TemporaryDirectory()
+    paths = ["/Users/benweinstein/Documents/EvergladesTools/photoshop/tests/Joule_03_14_2022_crop.csv"]
+    df = generate_empty_annotations.run(paths, image_pool=image_pool, base_dir=base_dir.name)
