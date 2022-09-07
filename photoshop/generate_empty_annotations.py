@@ -30,7 +30,6 @@ def lookup_raster(image_pool, basename):
 def predict_boxes(image_path):
     m = main.deepforest()
     m.use_bird_release()    
-    m.config["score_thresh"] = 0.01
     boxes = m.predict_tile(raster_path=image_path, patch_size=1500)
     boxes['geometry'] = boxes.apply(lambda x: shapely.geometry.box(x.xmin,x.ymin,x.xmax,x.ymax), axis=1)
     boxes = gpd.GeoDataFrame(boxes, geometry='geometry')    
@@ -65,8 +64,9 @@ def run(paths, image_pool, base_dir):
         
         #Format for deepforest image_path, xmin, ymin, xmax, ymax, label
         merged_boxes = pd.concat([merged_boxes,merged_boxes.bounds], 1).rename(columns={"minx": "xmin","miny":"ymin","maxx":"xmax","maxy":"ymax"})
-        merged_boxes.to_csv("{}/raw_annotations.csv".format(base_dir))
-        annotations = crop(annotations="{}/raw_annotations.csv".format(base_dir), image_path=image_path, base_dir=base_dir)
+        merged_boxes.to_csv("{}/raw_annotations_{}.csv".format(base_dir, basename))
+        annotations = crop(annotations="{}/raw_annotations_{}.csv".format(base_dir, basename), image_path=image_path, base_dir=base_dir)
+        print("There are {} annotations in the cropped csv".format(annotations.shape[0]))
         crop_annotations.append(annotations)
     
     crop_annotations = pd.concat(crop_annotations)
