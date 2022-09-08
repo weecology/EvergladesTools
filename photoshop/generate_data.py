@@ -122,7 +122,7 @@ def run(paths, image_pool, base_dir, regenerate=False):
             annotations = crop(annotations="{}/raw_annotations.csv".format(base_dir), image_path=image_path, base_dir=base_dir)
             crop_annotations.append(annotations)
     else:
-        files = glob.glob("{}/{}".format(base_dir))
+        files = glob.glob("{}/*.csv".format(base_dir))
         files = [x for x in files if not "raw" in x]
         crop_annotations = [pd.read_csv(x) for x in files]
         
