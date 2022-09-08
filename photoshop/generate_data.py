@@ -57,6 +57,10 @@ def create_boxes(df, size=30):
 
 def choose_box(group, df):
     """Given a set of overlapping bounding boxes and predictions, just choose the closest to stem box by centroid if there are multiples"""
+    
+    if all(group.ItemNumber.isnull().values):
+        return group
+        
     if group.shape[0] == 1:
         return  group
     else:
@@ -69,7 +73,7 @@ def choose_box(group, df):
 
 def points_to_boxes(df, boxes):
     #Merge results with field data, buffer on edge 
-    merged_boxes = gpd.sjoin(boxes, df)
+    merged_boxes = gpd.sjoin(boxes, df, how="left")
 
     ##If no remaining boxes just take a box around center
     missing_ids = df[~df.ItemNumber.isin(merged_boxes.ItemNumber)]
@@ -92,7 +96,7 @@ def points_to_boxes(df, boxes):
     return merged_boxes    
     
 def crop(annotations, image_path, base_dir):
-    split_annotations = split_raster(annotations_file=annotations, path_to_raster=image_path, patch_size=1500, patch_overlap=0, base_dir=base_dir)
+    split_annotations = split_raster(annotations_file=annotations, path_to_raster=image_path, patch_size=1500, patch_overlap=0, base_dir=base_dir, allow_empty=True)
     
     return split_annotations
 
@@ -118,7 +122,15 @@ def run(paths, image_pool, base_dir):
         crop_annotations.append(annotations)
     
     crop_annotations = pd.concat(crop_annotations)
-    crop_annotations.to_csv("{}/split_annotations.csv".format(base_dir))
+    remove_false_positives = crop_annotations[~crop_annotations.Species.isnull()]
+    remove_false_positives.to_csv("{}/split_annotations.csv".format(base_dir))
+    
+    #Get empty images
+    images_to_keep = crop_annotations[crop_annotations.Species.isnull()].image_path.unique()
+    has_true_positive = crop_annotations[~crop_annotations.Species.isnull()].image_path.unique()
+    images_to_keep = [x for x in images_to_keep if x not in has_true_positive]
+    crop_annotations = crop_annotations[crop_annotations.image_path.isin(images_to_keep)]
+    crop_annotations.to_csv("{}/inferred_empty_annotations.csv".format(base_dir))
     
     return crop_annotations
 
