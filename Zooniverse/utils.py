@@ -1,6 +1,7 @@
-#Utils
-from panoptes_client import Panoptes, Project
+# Utils
 import tokens
+from panoptes_client import Panoptes, Project
+
 
 def connect():
     Panoptes.connect(username=tokens.get_username(), password=tokens.get_password())

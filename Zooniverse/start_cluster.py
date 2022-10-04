@@ -2,14 +2,17 @@
 Create a cluster of GPU nodes to perform parallel prediction of tiles
 """
 import argparse
-import sys
-import socket
-from dask_jobqueue import SLURMCluster
-from dask.distributed import Client, wait
 import gc
+import socket
+import sys
+
+from dask.distributed import Client
+from dask_jobqueue import SLURMCluster
+
 
 def collect():
     gc.collect()
+
 
 def args():
     parser = argparse.ArgumentParser(
@@ -37,17 +40,17 @@ def start_tunnel():
     print("For CPU dashboard: ssh -N -L 8781:%s:8781 -l b.weinstein hpg2.rc.ufl.edu" %
           (host))
 
-    #flush system
+    # flush system
     sys.stdout.flush()
 
 
 def start(cpus=0, gpus=0, mem_size="10GB"):
-    #################
+    ####################
     # Setup dask cluster
-    #################
+    ####################
 
     if cpus > 0:
-        #job args
+        # job args
         extra_args = [
             "--error=/orange/idtrees-collab/logs/dask-worker-%j.err", "--account=ewhite",
             "--output=/orange/idtrees-collab/logs/dask-worker-%j.out"
@@ -68,7 +71,7 @@ def start(cpus=0, gpus=0, mem_size="10GB"):
         cluster.scale(cpus)
 
     if gpus:
-        #job args
+        # job args
         extra_args = [
             "--error=/orange/idtrees-collab/logs/dask-worker-%j.err", "--account=ewhite",
             "--output=/orange/idtrees-collab/logs/dask-worker-%j.out", "--partition=gpu",
@@ -89,7 +92,7 @@ def start(cpus=0, gpus=0, mem_size="10GB"):
 
     dask_client = Client(cluster)
 
-    #Start dask
+    # Start dask
     dask_client.run_on_scheduler(start_tunnel)
 
     return dask_client
