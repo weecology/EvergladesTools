@@ -1,19 +1,21 @@
-#load a raster and clip into pieces
-from deepforest import preprocess
+# load a raster and clip into pieces
 import argparse
 import os
+
 import rasterio
 from rasterio.mask import mask
 from shapely.geometry import box
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Simple script for cutting tif into tiles')
     parser.add_argument("--path")
-    parser.add_argument("--save_dir",default=".")
-    parser.add_argument("--patch_size",default=1500)
-    
-    return(parser.parse_args())
+    parser.add_argument("--save_dir", default=".")
+    parser.add_argument("--patch_size", default=1500)
+
+    return parser.parse_args()
+
 
 # Takes a Rasterio dataset and splits it into squares of dimensions squareDim * squareDim
 def splitImageIntoCells(img, filename, squareDim):
@@ -29,28 +31,30 @@ def splitImageIntoCells(img, filename, squareDim):
             getCellFromGeom(img, geom, filename, count)
             count = count + 1
 
+
 # Generate a bounding box from the pixel-wise coordinates using the original datasets transform property
 def getTileGeom(transform, x, y, squareDim):
-    
     try:
         corner1 = (x, y) * transform
     except Exception as e:
         print(e)
-        raise ValueError("x = {}, y={}, transfrom={}".format(x,y,transform))
-        
+        raise ValueError("x = {}, y={}, transfrom={}".format(x, y, transform))
+
     corner2 = (x + squareDim, y + squareDim) * transform
     return box(corner1[0], corner1[1],
-                        corner2[0], corner2[1])
+               corner2[0], corner2[1])
+
 
 # Write the passed in dataset as a GeoTIFF
 def writeImageAsGeoTIFF(img, transform, metadata, crs, filename):
-    metadata.update({"driver":"GTiff",
-                     "height":img.shape[1],
-                     "width":img.shape[2],
+    metadata.update({"driver": "GTiff",
+                     "height": img.shape[1],
+                     "width": img.shape[2],
                      "transform": transform,
                      "crs": crs})
-    with rasterio.open(filename+".tif", "w", **metadata) as dest:
+    with rasterio.open(filename + ".tif", "w", **metadata) as dest:
         dest.write(img)
+
 
 # Crop the dataset using the generated box and write it out as a GeoTIFF
 def getCellFromGeom(img, geom, filename, count):
@@ -59,20 +63,21 @@ def getCellFromGeom(img, geom, filename, count):
                         cropTransform,
                         img.meta,
                         img.crs,
-                        filename+"_"+str(count))
-    
-def run(path,save_dir, patch_size=1500):
+                        filename + "_" + str(count))
+
+
+def run(path, save_dir, patch_size=1500):
     """Read in raster, split into pieces and write to dir
     Returns:
         filename: path to directory of images
     """
-    
-    #Read image
+
+    # Read image
     img = rasterio.open(path)
     basename = os.path.splitext(os.path.basename(path))[0]
-    
-    #Find windows
-    filename = os.path.join(save_dir,basename)
+
+    # Find windows
+    filename = os.path.join(save_dir, basename)
     splitImageIntoCells(img, filename, patch_size)
-    
+
     return save_dir
