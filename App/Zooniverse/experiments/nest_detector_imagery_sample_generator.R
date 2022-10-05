@@ -49,13 +49,13 @@ get_new_samp_locs <- function(focal_birds, focal_nests, site, year, samples) {
   num_samples <- min(25, num_nests)
   random_birds <- focal_birds %>%
     mutate(known_nest = "no", nest_id = "") %>%
-    slice(sample(1:num_samples)) %>%
+    slice_sample(n = num_samples) %>%
     select(site, year, known_nest, nest_id, lat, long, species)
 
   detector_nests <- focal_nests %>%
     mutate(known_nest = "yes") %>%
     select(site, year, known_nest, nest_id, lat, long, species) %>%
-    slice(sample(1:num_samples)) %>%
+    slice_sample(n = num_samples) %>%
     rbind(random_birds) %>%
     slice(sample(1:n())) %>% # Randomize order to not give clues to real nests
     mutate(sample_id = seq_len(n())) %>%
