@@ -16,7 +16,7 @@ bird_codes <- data.frame(
   val = c("greg", "gbhe", "rosp", "wost", "sneg", "whib")
 )
 
-unzip("../data/PredictedBirds.zip", exdir = "Nesting")
+unzip("../data/PredictedBirds.zip")
 
 birds <- st_read("data/PredictedBirds.shp") %>%
   filter(score > 0.3) %>% #Make sure there's a good chance we're focusing on an area with a bird
@@ -31,7 +31,8 @@ birds <- birds %>%
   mutate(species = bird_codes[label,]) %>%
   mutate(event = as.Date(event, "%m_%d_%Y")) %>%
   mutate(year = year(event)) %>%
-  select(site, year, species, lat, long)
+  mutate(bird_id = row_number()) %>%
+  select(site, year, species, bird_id, lat, long)
 
 # Add random bird locations to field nests
 # Provides the sampling locations so reviewers don't know that a
