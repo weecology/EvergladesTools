@@ -40,9 +40,10 @@ birds <- birds %>%
 set.seed(26) # Keep same nest number and fake nest locations across runs
 
 get_new_samp_locs <- function(focal_birds, focal_field_nests, site, year){
+  num_samples <- nrow(focal_field_nests)
   random_birds <- focal_birds %>%
-    mutate(real_nest = "no", field_nest_id = "") %>%
-    slice(sample(1:nrow(focal_field_nests))) %>%
+    mutate(real_nest = "no", field_nest_id = bird_id) %>%
+    slice_sample(n = num_samples) %>%
     select(site, year, real_nest, field_nest_id, lat, long, species)
 
   field_nests <- focal_field_nests %>%
