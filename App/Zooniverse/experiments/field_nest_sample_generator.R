@@ -16,7 +16,7 @@ bird_codes <- data.frame(
   val = c("greg", "gbhe", "rosp", "wost", "sneg", "whib")
 )
 
-unzip("../data/PredictedBirds.zip", exdir = "Nesting")
+unzip("../data/PredictedBirds.zip")
 
 birds <- st_read("data/PredictedBirds.shp") %>%
   filter(score > 0.3) %>% #Make sure there's a good chance we're focusing on an area with a bird
@@ -31,7 +31,8 @@ birds <- birds %>%
   mutate(species = bird_codes[label,]) %>%
   mutate(event = as.Date(event, "%m_%d_%Y")) %>%
   mutate(year = year(event)) %>%
-  select(site, year, species, lat, long)
+  mutate(bird_id = row_number()) %>%
+  select(site, year, species, bird_id, lat, long)
 
 # Add random bird locations to field nests
 # Provides the sampling locations so reviewers don't know that a
@@ -40,9 +41,10 @@ birds <- birds %>%
 set.seed(26) # Keep same nest number and fake nest locations across runs
 
 get_new_samp_locs <- function(focal_birds, focal_field_nests, site, year){
+  num_samples <- nrow(focal_field_nests)
   random_birds <- focal_birds %>%
-    mutate(real_nest = "no", field_nest_id = "") %>%
-    slice(sample(1:nrow(focal_field_nests))) %>%
+    mutate(real_nest = "no", field_nest_id = bird_id) %>%
+    slice_sample(n = num_samples) %>%
     select(site, year, real_nest, field_nest_id, lat, long, species)
 
   field_nests <- focal_field_nests %>%
