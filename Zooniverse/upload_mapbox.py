@@ -12,8 +12,6 @@ def upload(path):
           #create output filename
           basename = os.path.splitext(os.path.basename(path))[0]
           mbtiles_filename = "/blue/ewhite/everglades/mapbox/{}.mbtiles".format(basename)
-          if os.path.exists(mbtiles_filename):
-               return mbtiles_filename
           
           dst_crs = rio.crs.CRS.from_epsg("3857")
      
@@ -43,11 +41,12 @@ def upload(path):
                                dst_crs=dst_crs,
                                resampling=Resampling.nearest)
      
-          ##Project to web mercator
-          subprocess.run(["touch", mbtiles_filename]) #The rio mbtiles command apparently requires that the output file already exist
-          subprocess.run(["rio", "mbtiles", out_filename, "-o", mbtiles_filename, "--zoom-levels", "17..24", "-j", "4", "-f", "PNG"])
+          ## Create the mbtiles files
+          if not os.path.exists(mbtiles_filename):
+               subprocess.run(["touch", mbtiles_filename]) #The rio mbtiles command apparently requires that the output file already exist
+               subprocess.run(["rio", "mbtiles", out_filename, "-o", mbtiles_filename, "--zoom-levels", "17..24", "-j", "4", "-f", "PNG"])
 
-          ##Generate tiles
+          ## Upload to mapbox
           subprocess.run(["mapbox", "upload", f"bweinstein.{basename}", mbtiles_filename])
      
      except Exception as e:
@@ -64,8 +63,8 @@ if __name__=="__main__":
           print(f"Uploading file {path} ({index + 1}/{len(files_to_upload)})")
           upload(path)
           
-     #client = start_cluster.start(cpus=20, mem_size="20GB")
-     #futures = client.map(upload,files_to_upload)
+     client = start_cluster.start(cpus=20, mem_size="20GB")
+     futures = client.map(upload,files_to_upload)
      
-     #completed_files = [x.result() for x in futures]
-     #print("Completed upload of {}".format(completed_files))
+     completed_files = [x.result() for x in futures]
+     print("Completed upload of {}".format(completed_files))
