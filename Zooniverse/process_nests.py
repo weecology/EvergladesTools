@@ -3,6 +3,7 @@ import pandas as pd
 import sys
 import os
 
+
 def count_max_consec_detects(nest_data, date_data):
     """Determine the maximum number of consecutive bird detections"""
     assert date_data.shape[0] == 1, "date_data should be a Pandas DataFrame with one row"
@@ -83,6 +84,7 @@ def process_nests(nest_file, year, site, savedir, min_score=0.3, min_detections=
         os.makedirs(savedir)
     filename = os.path.join(savedir, f"{site}_{year}_processed_nests.shp")
     nests_shp.to_file(filename)
+
 
 if __name__ == "__main__":
     path = sys.argv[1]
