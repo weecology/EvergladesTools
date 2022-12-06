@@ -2,10 +2,20 @@
 # Given a set of predictions in /orange/ewhite/everglades/predictions/, generate predicted nests
 import glob
 import os
-from pathlib import Path
-import geopandas
-import pandas as pd
+import random
 import sys
+
+import cv2
+import geopandas
+import numpy as np
+import pandas as pd
+import rasterio
+from PIL import Image, ImageDraw
+from panoptes_client import SubjectSet, Subject
+from rasterio.windows import from_bounds
+
+import utils
+
 
 def load_files(dirname, year, site):
     """Load shapefiles and concat into large frame"""
@@ -28,23 +38,22 @@ def load_files(dirname, year, site):
             print(e)
     df = geopandas.GeoDataFrame(pd.concat(df, ignore_index=True))
     df.crs = eventdf.crs
-
     return df
+
 
 def get_date(x):
     """parse filename to return event name"""
     basename = os.path.basename(x)
     event = basename.split("_")[1:4]
     event = "_".join(event)
-
     return event
+
 
 def calculate_IoUs(geom, match):
     """Calculate intersection-over-union scores for a pair of boxes"""
     intersection = geom.intersection(match).area
     union = geom.union(match).area
     iou = intersection / float(union)
-
     return iou
 
 
@@ -99,15 +108,13 @@ def compare_site(gdf):
         matches["target_index"] = index
         matches = matches.rename(
             columns={"xmin": "matched_xmin", "max": "matched_xmax", "ymin": "matched_ymin", "ymax": "matched_ymax"})
-
         results.append(matches)
 
     if len(results) == 0:
         return None
-
     results = pd.concat(results)
-
     return results
+
 
 def detect_nests(dirname, year, site, savedir):
     """Given a set of shapefiles, track time series of overlaps and save a shapefile of detected boxes"""
@@ -125,14 +132,12 @@ def detect_nests(dirname, year, site, savedir):
         os.makedirs(savedir)
     filename = os.path.join(savedir, f"{site}_{year}_detected_nests.shp")
     result_shp.to_file(filename)
-
     return filename
 
 
 def find_rgb_paths(site, paths):
     paths = [x for x in paths if site in x]
     paths.sort()
-
     return paths
 
 
@@ -162,7 +167,6 @@ def crop_images(df, rgb_images):
         basename = os.path.splitext(os.path.basename(tile))[0]
         datename = "{}_{}".format(target_ind, basename)
         crops[datename] = crop(tile, geom)
-
     return crops
 
 
@@ -177,7 +181,6 @@ def create_subject(filenames, everglades_watch):
 
     # Trigger upload
     subject.save()
-
     return subject
 
 
@@ -186,7 +189,6 @@ def create_subject_set(everglades_watch, name="Nest detections 2.0"):
     subject_set.links.project = everglades_watch
     subject_set.display_name = name
     subject_set.save()
-
     return subject_set
 
 
@@ -248,7 +250,6 @@ def find_files():
     paths = glob.glob("/orange/ewhite/everglades/utm_projected/*.tif")
     paths = [x for x in paths if not "Cypress" in x]
     paths = [x for x in paths if not "Joule_05_05_2021" in x]  # Joul 05_05_2021 is current not projected properly
-
     return paths
 
 
@@ -259,4 +260,3 @@ if __name__ == "__main__":
     site = split_path[6]
     savedir = os.path.join("/blue/ewhite/everglades/detected_nests/", year, site)
     detect_nests(path, year, site, savedir=savedir)
-
