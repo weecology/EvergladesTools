@@ -1,0 +1,5 @@
+[
+  "test_evaluate.py::test_compare_tiles_and_orthos",
+  "test_evaluate.py::test_predict_images",
+  "test_evaluate.py::test_predict_tile"
+]
