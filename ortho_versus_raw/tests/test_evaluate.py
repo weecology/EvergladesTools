@@ -22,4 +22,4 @@ def test_predict_images(model):
     
 def test_compare_tiles_and_orthos(model):
     predictions = evaluate.compare_tiles_and_orthos(model, tile_paths=["{}/tests/data/sample_tile.png".format(ROOT)])
-    assert not predictions.empty
+    assert not predictions[0].empty
