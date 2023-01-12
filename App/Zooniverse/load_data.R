@@ -2,9 +2,6 @@ library(sf)
 library(dplyr)
 source('functions.R')
 
-# Set thresholds
-min_confidence <- 0.4
-
 #Load data
 raw_data <- load_classifications()
 selected_boxes <- filter_annotations(raw_data)
@@ -21,7 +18,6 @@ unzip("data/PredictedBirds.zip", exdir = "data")
 df <- st_read("data/PredictedBirds.shp")
 df$event <- as.Date(df$event,"%m_%d_%Y")
 df$tileset_id <- construct_id(df$site,df$event)
-df <- df %>% filter(score > min_confidence)
 df <- st_transform(df, 4326)
 df <- st_centroid(df)
 year <- sapply(df$event, function(event) str_split(event, "-")[[1]][[1]])
