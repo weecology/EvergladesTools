@@ -2,6 +2,7 @@ import glob
 import os
 import sys
 import subprocess
+import combine_bird_predictions
 
 import rasterio as rio
 from rasterio.warp import calculate_default_transform, reproject, Resampling
@@ -10,6 +11,9 @@ def upload(path, year, site):
     try:
         # Create output filename
         basename = os.path.splitext(os.path.basename(path))[0]
+        if combine_bird_predictions.get_event(basename) == "Primary":
+            # If from the primary flight strip any extra metadata from filename
+            basename = "_".join(basename.split('_')[0:4])
         mbtiles_filename = "/blue/ewhite/everglades/mapbox/{}.mbtiles".format(basename)
         if os.path.exists(mbtiles_filename):
             return mbtiles_filename
@@ -32,7 +36,7 @@ def upload(path, year, site):
             out_filename = f"/blue/ewhite/everglades/projected_mosaics/webmercator/{year}/{site}/{flight}_projected.tif"
             if not os.path.exists(out_filename):
                 if not os.path.exists(f"/blue/ewhite/everglades/projected_mosaics/webmercator/{year}/{site}/"):
-                    os.mkdir(f"/blue/ewhite/everglades/projected_mosaics/webmercator/{year}/{site}/")
+                    os.makedirs(f"/blue/ewhite/everglades/projected_mosaics/webmercator/{year}/{site}/")
                 with rio.open(out_filename, 'w', **kwargs) as dst:
                     for i in range(1, src.count + 1):
                         reproject(
