@@ -1,38 +1,63 @@
 import glob
 import os
 
-ORTHOMOSAICS = glob_wildcards("/blue/ewhite/everglades/orthomosaics/{year}/{site}/{flight}.tif")
+ORTHOMOSAICS = glob_wildcards("/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/orthomosaics/{year}/{site}/{flight}.tif")
 
 rule all:
     input:
-        "/blue/ewhite/everglades/EvergladesTools/App/Zooniverse/data/PredictedBirds.zip",
-        expand("/blue/ewhite/everglades/predictions/{year}/{site}/{flight}_projected.shp",
-               zip, site=ORTHOMOSAICS.site, year = ORTHOMOSAICS.year, flight=ORTHOMOSAICS.flight)
+#        "EvergladesTools/App/Zooniverse/data/PredictedBirds.zip",
+        expand("/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/predictions/{year}/{site}/{flight}_projected.shp",
+               zip, site=ORTHOMOSAICS.site, year = ORTHOMOSAICS.year, flight=ORTHOMOSAICS.flight),
+        expand("/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/predictions/{year}/{site}/nest_flights_info.json",
+               zip, site=ORTHOMOSAICS.site, year = ORTHOMOSAICS.year)
+        # expand("/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/detected_nests/{year}/{site}/detected_nests.shp",
+        #        zip, site = ORTHOMOSAICS.site, year = ORTHOMOSAICS.year)
 
 
 rule project_mosaics:
     input:
-        "/blue/ewhite/everglades/orthomosaics/{year}/{site}/{flight}.tif"
+        "/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/orthomosaics/{year}/{site}/{flight}.tif"
     output:
-        "/blue/ewhite/everglades/projected_mosaics/{year}/{site}/{flight}_projected.tif"
+        "/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/projected_mosaics/{year}/{site}/{flight}_projected.tif"
     shell:
         "python project_orthos.py {input}"
 
 rule predict_birds:
     input:
-        "/blue/ewhite/everglades/projected_mosaics/{year}/{site}/{flight}_projected.tif"
+        "/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/projected_mosaics/{year}/{site}/{flight}_projected.tif"
     output:
-        "/blue/ewhite/everglades/predictions/{year}/{site}/{flight}_projected.shp"
+        "/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/predictions/{year}/{site}/{flight}_projected.shp"
     resources:
         gpu=1
     shell:
         "python predict.py {input}"
 
-rule combine_predicted_birds:
+def site_year_flights(wildcards):
+    basepath = "/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/predictions"
+    site_year_files = [f"{basepath}/{year}/{site}/{flight}_projected.shp" for site, year, flight in zip(ORTHOMOSAICS.site, ORTHOMOSAICS.year, ORTHOMOSAICS.flight)]
+    print(site_year_files)
+    return site_year_files
+
+rule nest_flight_info:
     input:
-        expand("/blue/ewhite/everglades/predictions/{year}/{site}/{flight}_projected.shp",
-               zip, site=ORTHOMOSAICS.site, year = ORTHOMOSAICS.year, flight=ORTHOMOSAICS.flight)
+        site_year_flights
     output:
-        "/blue/ewhite/everglades/EvergladesTools/App/Zooniverse/data/PredictedBirds.zip"
-    shell:
-        "python combine_bird_predictions.py"
+        "/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/predictions/{year}/{site}/nest_flights_info.json"
+    shell: "python nest_flight_info.py {input}"
+
+# rule detect_nests:
+#     input:
+#         "/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/predictions/{year}/{site}/nest_flights_info.json"
+#     output:
+#         "/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/detected_nests/{year}/{site}/detected_nests.shp"
+#     shell:
+#         "python detect_nests.py {input}"
+
+# rule combine_predicted_birds:
+#     input:
+#         expand("/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/predictions/{year}/{site}/{flight}_projected.shp",
+#                zip, site=ORTHOMOSAICS.site, year = ORTHOMOSAICS.year, flight=ORTHOMOSAICS.flight)
+#     output:
+#         "/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/EvergladesTools/App/Zooniverse/data/PredictedBirds.zip"
+#     shell:
+#         "python combine_bird_predictions.py"

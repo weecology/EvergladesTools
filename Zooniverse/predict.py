@@ -1,12 +1,14 @@
 import os
 import sys
 
-import geopandas
+import json
+#import geopandas
 import pandas as pd
-import rasterio
-import shapely
-import torch
-from deepforest import main
+#import rasterio
+#import shapely
+import time
+#import torch
+#from deepforest import main
 
 
 def project(raster_path, boxes):
@@ -38,6 +40,21 @@ def project(raster_path, boxes):
 
     return boxes
 
+def update_nest_flights_info(basename, savedir):
+    """Update the nest_flights_info file to indicate that file has been processed
+    
+    This is import for the snakemake pipeline and also provides metadata
+    on when a given ortho was last processed.
+    """
+    if os.path.exists(f"{savedir}/nest_flights_info.json"):
+        json_file = open(f"{savedir}/nest_flights_info.json", "r")
+        nest_flights_info = json.load(json_file)
+        json_file.close()
+    else:
+        nest_flights_info = {}
+    nest_flights_info[basename] = time.asctime(time.localtime(time.time()))
+    with open(f"{savedir}/nest_flights_info.json", "w") as json_file:
+        json.dump(nest_flights_info, json_file, indent=2)
 
 def run(proj_tile_path, checkpoint_path, savedir="."):
     """Apply trained model to a drone tile"""
@@ -63,6 +80,8 @@ def run(proj_tile_path, checkpoint_path, savedir="."):
     fn = "{}/{}.shp".format(savedir, basename)
     projected_boxes.to_file(fn)
 
+    update_nest_flights_info(basename, savedir)
+
     return fn
 
 
@@ -71,8 +90,16 @@ if __name__ == "__main__":
 
     path = sys.argv[1]
     split_path = os.path.normpath(path).split(os.path.sep)
-    year = split_path[5]
-    site = split_path[6]
+    ###
+    year = split_path[9]
+    site = split_path[10]
 
-    savedir = os.path.join("/blue/ewhite/everglades/predictions/", year, site)
-    result = run(proj_tile_path=path, checkpoint_path=checkpoint_path, savedir=savedir)
+    savedir = os.path.join("/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/predictions/", year, site)
+    # result = run(proj_tile_path=path, checkpoint_path=checkpoint_path, savedir=savedir)
+    basename = os.path.splitext(os.path.basename(path))[0]
+    print(basename)
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
+#    update_nest_flights_info(basename, savedir)
+    with open(f"{savedir}/{basename}.shp", "w") as fp:
+        pass

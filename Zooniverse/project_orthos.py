@@ -1,8 +1,8 @@
 import os
 import sys
 
-import rasterio
-from rasterio.warp import calculate_default_transform, reproject, Resampling
+#import rasterio
+#from rasterio.warp import calculate_default_transform, reproject, Resampling
 
 
 def utm_project_raster(path, year, site, savedir="/blue/ewhite/everglades/projected_mosaics/"):
@@ -40,6 +40,12 @@ def utm_project_raster(path, year, site, savedir="/blue/ewhite/everglades/projec
 if __name__ == "__main__":
     path = sys.argv[1]
     split_path = os.path.normpath(path).split(os.path.sep)
-    year = split_path[5]
-    site = split_path[6]
-    utm_project_raster(path, year, site)
+    year = split_path[9]
+    site = split_path[10]
+#    utm_project_raster(path, year, site)
+    basename = os.path.splitext(os.path.basename(path))[0]
+    savedir = f"/home/ethan/Dropbox/Research/Everglades/EvergladesTools/Zooniverse/projected_mosaics/{year}/{site}"
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
+    with open(f"{savedir}/{basename}_projected.tif", "w") as fp:
+        pass
