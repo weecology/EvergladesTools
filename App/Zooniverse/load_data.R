@@ -16,12 +16,12 @@ samples <- st_read(
 #Predictions
 unzip("data/PredictedBirds.zip", exdir = "data")
 df <- st_read("data/PredictedBirds.shp")
-df$event <- as.Date(df$event,"%m_%d_%Y")
+df$actualevent = df$event
+df <- mutate(df, year = Year, site = Site, date = Date)
+df$event <- as.Date(df$date, "%m_%d_%Y")
 df$tileset_id <- construct_id(df$site,df$event)
 df <- st_transform(df, 4326)
 df <- st_centroid(df)
-year <- sapply(df$event, function(event) str_split(event, "-")[[1]][[1]])
-df <- mutate(df, bird_id = row_number(), year = year)
 
 #Nest predictions
 unzip("data/nest_detections_processed.zip", exdir = "data")
