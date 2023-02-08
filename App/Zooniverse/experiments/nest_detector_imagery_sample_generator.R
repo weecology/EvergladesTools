@@ -16,13 +16,6 @@ detector_nests <- detector_nests %>%
   bind_cols(detector_nest_coords) %>%
   rename(site = Site, year = Year)
 
-# Get list of birds identified as being in nests
-
-birds_in_nests = c()
-for (match in detector_nests$bird_match){
-  birds_in_nests <- unique(c(birds_in_nests, as.numeric(str_split(match, ",")[[1]])))
-}
-
 # Load field nest samples
 sample_locations <- read.csv("experiments/nest_detector_imagery_sample_locations.csv")
 
@@ -41,10 +34,10 @@ birds <- birds %>%
   as.data.frame() %>%
   bind_cols(bird_coords) %>%
   mutate(species = label) %>%
-  mutate(event = as.Date(event, "%m_%d_%Y")) %>%
+  mutate(event = as.Date(Date, "%m_%d_%Y")) %>%
   mutate(year = year(event)) %>%
-  mutate(bird_id = row_number()) %>%
-  select(site, year, species, bird_id, lat, long)
+  group_by(Site, Year) %>%
+  select(site = Site, year = Year, species, bird_id, lat, long)
 
 # Add random bird locations to field nests
 # Provides the sampling locations so reviewers don't know that a
@@ -52,14 +45,29 @@ birds <- birds %>%
 
 set.seed(26) # Keep same nest number and fake nest locations across runs
 
-get_new_samp_locs <- function(focal_birds, focal_nests, birds_in_nests, site, year, samples) {
+get_new_samp_locs <- function(focal_birds, focal_nests, samples) {
   num_nests <- nrow(focal_nests)
   num_samples <- min(25, num_nests)
+
+  # Get list of birds identified as being in nests
+  birds_in_nests = c()
+  for (match in focal_nests$bird_match){
+    birds_in_nests <- unique(c(birds_in_nests, as.numeric(str_split(match, ",")[[1]])))
+  }
+
+#  if (unique(focal_nests$site) == "Joule" & unique(focal_nests$year) == 2021){
+#      print(birds_in_nests)
+#  }
+
   random_birds <- focal_birds %>%
     filter(!(bird_id %in% birds_in_nests) ) %>%
     mutate(known_nest = "no", nest_id = bird_id) %>%
     slice_sample(n = num_samples) %>%
     select(site, year, known_nest, nest_id, lat, long, species)
+
+#  if (unique(focal_nests$site) == "Joule" & unique(focal_nests$year) == 2021){
+#      print(random_birds, n = 25)
+#  }
 
   detector_nests <- focal_nests %>%
     mutate(known_nest = "yes") %>%
@@ -86,7 +94,7 @@ for (i in seq_len(nrow(surveys))) {
   samp_count_yes <- nrow(filter(focal_sample_locations, known_nest == "yes"))
   samp_count_no <- nrow(filter(focal_sample_locations, known_nest == "no"))
   if (samp_count_yes == 0 & samp_count_no == 0) {
-    new_samp_locs <- get_new_samp_locs(focal_birds, focal_nests, birds_in_nests, site, year, samples=25)
+    new_samp_locs <- get_new_samp_locs(focal_birds, focal_nests, samples=25)
     samp_locs_updated <- rbind(samp_locs_updated, new_samp_locs)
     changes_made <- TRUE
   } else if (samp_count_yes != nest_count | samp_count_no != nest_count) {
