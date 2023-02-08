@@ -16,7 +16,8 @@ samples <- st_read(
 #Predictions
 unzip("data/PredictedBirds.zip", exdir = "data")
 df <- st_read("data/PredictedBirds.shp")
-df$actualevent = df$event
+df$actualevent <- df$event
+df <- filter(df, actualevent == "primary")
 df <- mutate(df, year = Year, site = Site, date = Date)
 df$event <- as.Date(df$date, "%m_%d_%Y")
 df$tileset_id <- construct_id(df$site,df$event)
