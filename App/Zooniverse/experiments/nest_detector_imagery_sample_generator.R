@@ -55,28 +55,21 @@ get_new_samp_locs <- function(focal_birds, focal_nests, samples) {
     birds_in_nests <- unique(c(birds_in_nests, as.numeric(str_split(match, ",")[[1]])))
   }
 
-#  if (unique(focal_nests$site) == "Joule" & unique(focal_nests$year) == 2021){
-#      print(birds_in_nests)
-#  }
-
   random_birds <- focal_birds %>%
     filter(!(bird_id %in% birds_in_nests) ) %>%
     mutate(known_nest = "no", nest_id = bird_id) %>%
     slice_sample(n = num_samples) %>%
-    select(site, year, known_nest, nest_id, lat, long, species)
-
-#  if (unique(focal_nests$site) == "Joule" & unique(focal_nests$year) == 2021){
-#      print(random_birds, n = 25)
-#  }
+    select(site, year, known_nest, nest_id, lat, long, species) %>%
+    mutate(num_obs = 1)
 
   detector_nests <- focal_nests %>%
     mutate(known_nest = "yes") %>%
-    select(site, year, known_nest, nest_id, lat, long, species) %>%
+    select(site, year, known_nest, nest_id, lat, long, species, num_obs) %>%
     slice_sample(n = num_samples) %>%
     rbind(random_birds) %>%
     slice(sample(1:n())) %>% # Randomize order to not give clues to real nests
     mutate(sample_id = seq_len(n())) %>%
-    select(site, year, sample_id, known_nest, nest_id, species, lat, long)
+    select(site, year, sample_id, known_nest, nest_id, species, lat, long, num_obs)
 
   return(detector_nests)
 }
