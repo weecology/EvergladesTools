@@ -138,15 +138,11 @@ def run(classification_shp, image_data, savedir="."):
 
 if __name__ == "__main__":
     # Download images
-    run(
-        classification_shp="../App/Zooniverse/data/everglades-watch-classifications_unprojected.shp",
+    run(classification_shp="../App/Zooniverse/data/everglades-watch-classifications_unprojected.shp",
         image_data="../App/Zooniverse/data/everglades-watch-subjects.csv",
-        savedir="/orange/ewhite/everglades/Zooniverse/parsed_images/"
-    )
+        savedir="/orange/ewhite/everglades/Zooniverse/parsed_images/")
 
     # Optionally download and format empty frames
-    extract_empty(
-        parsed_data="../App/Zooniverse/data/parsed_annotations.csv",
-        image_data="../App/Zooniverse/data/everglades-watch-subjects.csv",
-        save_dir="/orange/ewhite/everglades/Zooniverse/parsed_images/"
-    )
+    extract_empty(parsed_data="../App/Zooniverse/data/parsed_annotations.csv",
+                  image_data="../App/Zooniverse/data/everglades-watch-subjects.csv",
+                  save_dir="/orange/ewhite/everglades/Zooniverse/parsed_images/")

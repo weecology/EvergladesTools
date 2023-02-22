@@ -81,7 +81,11 @@ def predict_empty_frames(model, empty_images, comet_experiment, invert=False):
     comet_experiment.experiment.log_figure(recall_plot)
 
 
-def train_model(train_path, test_path, empty_images_path=None, save_dir=".", debug=False,
+def train_model(train_path,
+                test_path,
+                empty_images_path=None,
+                save_dir=".",
+                debug=False,
                 model_name="bird_detector.pl"):
     """Train a DeepForest model"""
 
@@ -169,7 +173,8 @@ def train_model(train_path, test_path, empty_images_path=None, save_dir=".", deb
             # Add a label for undetected birds and create confusion matrix
             model.label_dict.update({'Bird Not Detected': 6})
 
-            comet_logger.experiment.log_confusion_matrix(y_true=ytrue, y_predicted=ypred,
+            comet_logger.experiment.log_confusion_matrix(y_true=ytrue,
+                                                         y_predicted=ypred,
                                                          labels=list(model.label_dict.keys()))
         except Exception as e:
             print("logger exception: {} with traceback \n {}".format(e, traceback.print_exc()))
@@ -193,7 +198,8 @@ def train_model(train_path, test_path, empty_images_path=None, save_dir=".", deb
 
     # Save a full set of predictions to file.
     boxes = model.predict_file(model.config["validation"]["csv_file"], root_dir=model.config["validation"]["root_dir"])
-    visualize.plot_prediction_dataframe(df=boxes, savedir=model_savedir,
+    visualize.plot_prediction_dataframe(df=boxes,
+                                        savedir=model_savedir,
                                         root_dir=model.config["validation"]["root_dir"])
 
     return model

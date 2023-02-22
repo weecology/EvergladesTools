@@ -9,16 +9,17 @@ import utils
 
 
 def species_from_label(value):
-    label_dict = {0: 'Great Egret',
-                  1: 'Snowy Egret',
-                  2: 'White Ibis',
-                  3: 'Great Blue Heron',
-                  4: 'Wood Stork',
-                  5: 'Roseate Spoonbill',
-                  6: 'Anhinga',
-                  7: 'Other',
-                  8: 'Unknown'
-                  }
+    label_dict = {
+        0: 'Great Egret',
+        1: 'Snowy Egret',
+        2: 'White Ibis',
+        3: 'Great Blue Heron',
+        4: 'Wood Stork',
+        5: 'Roseate Spoonbill',
+        6: 'Anhinga',
+        7: 'Other',
+        8: 'Unknown'
+    }
 
     return label_dict[value]
 
@@ -111,8 +112,13 @@ def parse_annotations(x):
         annotations = parse_nest_location(x)
         annotations["valid_nest"] = nest_status
     else:
-        annotations = pd.DataFrame(
-            {"frame": [None], "nest_x": [None], "nest_y": [None], "species": [None], "valid_nest": [False]})
+        annotations = pd.DataFrame({
+            "frame": [None],
+            "nest_x": [None],
+            "nest_y": [None],
+            "species": [None],
+            "valid_nest": [False]
+        })
 
     return annotations
 
@@ -136,8 +142,13 @@ def parse_subject_data(x):
             site = np.nan
             event = np.nan
 
-        bounds = pd.DataFrame(
-            {"subject_ids": [key], "nest_id": [nest_id], "site": site, "event": event, "filename": site_data})
+        bounds = pd.DataFrame({
+            "subject_ids": [key],
+            "nest_id": [nest_id],
+            "site": site,
+            "event": event,
+            "filename": site_data
+        })
 
     return bounds
 
@@ -268,6 +279,7 @@ def parse_birds(df):
 
 # return iou
 
+
 def run(classifications_file=None, savedir=".", download=False, generate=False, min_version=195.257, debug=False):
     # Authenticate
     if download:
@@ -312,5 +324,4 @@ def run(classifications_file=None, savedir=".", download=False, generate=False, 
 if __name__ == "__main__":
     # Download from Zooniverse and parse
 
-    fname = run(savedir="../App/Zooniverse/data/", download=True,
-                generate=False, min_version=195.257)
+    fname = run(savedir="../App/Zooniverse/data/", download=True, generate=False, min_version=195.257)
