@@ -6,83 +6,89 @@ import os
 import geopandas as gpd
 import glob
 
+
 def load(path):
-    basename = os.path.splitext(os.path.basename(path))[0]        
+    basename = os.path.splitext(os.path.basename(path))[0]
     df = pd.read_csv(path)
     df["image_path"] = "{}.tif".format(basename)
-    
-    #Create geospatial frame
+
+    # Create geospatial frame
     df["x"] = df.Xpos.apply(lambda x: int(float(x.split(" ")[0])))
     df["y"] = df.Ypos.apply(lambda x: int(float(x.split(" ")[0])))
-    df['geometry'] = df.apply(lambda x: shapely.geometry.Point(x.x,x.y), axis=1)
-    df = gpd.GeoDataFrame(df, geometry='geometry')    
-    
+    df['geometry'] = df.apply(lambda x: shapely.geometry.Point(x.x, x.y), axis=1)
+    df = gpd.GeoDataFrame(df, geometry='geometry')
+
     return df
-    
+
+
 def lookup_raster(image_pool, basename):
     try:
         tifs = [x for x in image_pool if basename in x]
         tifs = [x for x in tifs if not "projected" in x]
-        return tifs[0] 
+        return tifs[0]
     except:
         return None
 
+
 def predict_boxes(image_path):
     m = main.deepforest()
-    m.use_bird_release()    
+    m.use_bird_release()
     boxes = m.predict_tile(raster_path=image_path, patch_size=1500)
-    boxes['geometry'] = boxes.apply(lambda x: shapely.geometry.box(x.xmin,x.ymin,x.xmax,x.ymax), axis=1)
-    boxes = gpd.GeoDataFrame(boxes, geometry='geometry')    
-        
+    boxes['geometry'] = boxes.apply(lambda x: shapely.geometry.box(x.xmin, x.ymin, x.xmax, x.ymax), axis=1)
+    boxes = gpd.GeoDataFrame(boxes, geometry='geometry')
+
     return boxes
+
 
 def create_boxes(df, size=30):
     """If there are no deepforest boxes, fall back on selecting a fixed area around stem point"""
     fixed_boxes = df.buffer(size).envelope
-    
+
     fixed_boxes = gpd.GeoDataFrame(geometry=fixed_boxes)
-    
-    #Mimic the existing structure
+
+    # Mimic the existing structure
     fixed_boxes = gpd.sjoin(fixed_boxes, df)
     fixed_boxes["score"] = None
-    fixed_boxes["label"] = "Tree" 
-    fixed_boxes["xmin"] = None 
+    fixed_boxes["label"] = "Tree"
+    fixed_boxes["xmin"] = None
     fixed_boxes["xmax"] = None
     fixed_boxes["ymax"] = None
     fixed_boxes["ymin"] = None
-    
+
     fixed_boxes["box_id"] = fixed_boxes.index.to_series().apply(lambda x: "fixed_box_{}".format(x))
-    
+
     return fixed_boxes
+
 
 def choose_box(group, df):
     """Given a set of overlapping bounding boxes and predictions, just choose the closest to stem box by centroid if there are multiples"""
-    
+
     if all(group.ItemNumber.isnull().values):
         return group
-        
+
     if group.shape[0] == 1:
-        return  group
+        return group
     else:
-        #Find centroid
+        # Find centroid
         individual_id = group.ItemNumber.unique()[0]
-        stem_location = df[df["ItemNumber"]==individual_id].geometry.iloc[0]
+        stem_location = df[df["ItemNumber"] == individual_id].geometry.iloc[0]
         closest_stem = group.centroid.distance(stem_location).sort_values().index[0]
-        
+
         return group.loc[[closest_stem]]
 
+
 def points_to_boxes(df, boxes):
-    #Merge results with field data, buffer on edge 
+    # Merge results with field data, buffer on edge
     merged_boxes = gpd.sjoin(boxes, df, how="left")
 
-    ##If no remaining boxes just take a box around center
+    # If no remaining boxes just take a box around center
     missing_ids = df[~df.ItemNumber.isin(merged_boxes.ItemNumber)]
 
     if not missing_ids.empty:
         created_boxes = create_boxes(missing_ids)
         merged_boxes = merged_boxes.append(created_boxes)
 
-    #If there are multiple boxes per point, take the center box
+    # If there are multiple boxes per point, take the center box
     grouped = merged_boxes.groupby("ItemNumber")
 
     cleaned_boxes = []
@@ -90,58 +96,73 @@ def points_to_boxes(df, boxes):
         choosen_box = choose_box(group, df)
         cleaned_boxes.append(choosen_box)
 
-    merged_boxes = gpd.GeoDataFrame(pd.concat(cleaned_boxes),crs=merged_boxes.crs)
-    merged_boxes = merged_boxes.drop(columns=["xmin","xmax","ymin","ymax"])
-    
-    return merged_boxes    
-    
+    merged_boxes = gpd.GeoDataFrame(pd.concat(cleaned_boxes), crs=merged_boxes.crs)
+    merged_boxes = merged_boxes.drop(columns=["xmin", "xmax", "ymin", "ymax"])
+
+    return merged_boxes
+
+
 def crop(annotations, image_path, base_dir):
-    split_annotations = split_raster(annotations_file=annotations, path_to_raster=image_path, patch_size=1500, patch_overlap=0, base_dir=base_dir, allow_empty=True)
-    
+    split_annotations = split_raster(annotations_file=annotations,
+                                     path_to_raster=image_path,
+                                     patch_size=1500,
+                                     patch_overlap=0,
+                                     base_dir=base_dir,
+                                     allow_empty=True)
+
     return split_annotations
+
 
 def run(paths, image_pool, base_dir, regenerate=False):
     """For a given annotation file, predict bird detections, associate points with boxes and save a .csv for training"""
-    
+
     if regenerate:
         crop_annotations = []
         for path in paths[:1]:
             print(path)
             df = load(path)
-            basename = os.path.splitext(os.path.basename(path))[0] 
+            basename = os.path.splitext(os.path.basename(path))[0]
             image_path = lookup_raster(image_pool, basename)
             if image_path is None:
                 continue
             boxes = predict_boxes(image_path)
             merged_boxes = points_to_boxes(df, boxes)
-            
-            #Format for deepforest image_path, xmin, ymin, xmax, ymax, label
+
+            # Format for deepforest image_path, xmin, ymin, xmax, ymax, label
             merged_boxes[["label"]] = merged_boxes[["Species"]]
-            merged_boxes = pd.concat([merged_boxes[["image_path","label"]],merged_boxes.bounds], 1).rename(columns={"minx": "xmin","miny":"ymin","maxx":"xmax","maxy":"ymax"})
+            merged_boxes = pd.concat([merged_boxes[["image_path", "label"]], merged_boxes.bounds], 1).rename(columns={
+                "minx": "xmin",
+                "miny": "ymin",
+                "maxx": "xmax",
+                "maxy": "ymax"
+            })
             merged_boxes.to_csv("{}/raw_annotations.csv".format(base_dir))
-            annotations = crop(annotations="{}/raw_annotations.csv".format(base_dir), image_path=image_path, base_dir=base_dir)
+            annotations = crop(annotations="{}/raw_annotations.csv".format(base_dir),
+                               image_path=image_path,
+                               base_dir=base_dir)
             crop_annotations.append(annotations)
     else:
         files = glob.glob("{}/*.csv".format(base_dir))
         files = [x for x in files if not "raw" in x]
         crop_annotations = [pd.read_csv(x) for x in files]
-        
+
     crop_annotations = pd.concat(crop_annotations)
-    remove_false_positives = crop_annotations[~(crop_annotations.xmin==crop_annotations.xmax)]
+    remove_false_positives = crop_annotations[~(crop_annotations.xmin == crop_annotations.xmax)]
     remove_false_positives.to_csv("{}/split_annotations.csv".format(base_dir))
-    
-    #Get empty images
-    images_to_keep = crop_annotations[(crop_annotations.xmin==crop_annotations.xmax)].image_path.unique()
+
+    # Get empty images
+    images_to_keep = crop_annotations[(crop_annotations.xmin == crop_annotations.xmax)].image_path.unique()
     has_true_positive = remove_false_positives.image_path.unique()
     images_to_keep = [x for x in images_to_keep if x not in has_true_positive]
     crop_annotations = crop_annotations[crop_annotations.image_path.isin(images_to_keep)]
     crop_annotations.to_csv("{}/inferred_empty_annotations.csv".format(base_dir))
-    
+
     return crop_annotations
 
-if __name__ == "__main__":    
+
+if __name__ == "__main__":
     paths = glob.glob("/home/b.weinstein/EvergladesTools/photoshop/csvs/*")
     image_pool = glob.glob("/blue/ewhite/everglades/orthomosaics/**/**/*", recursive=True)
     base_dir = "/blue/ewhite/everglades/photoshop_annotations/"
-    
-    run(paths, image_pool, base_dir)    
+
+    run(paths, image_pool, base_dir)
