@@ -169,9 +169,17 @@ def parse_subject_data(x):
             site = np.nan
             event = np.nan
 
-        bounds = pd.DataFrame({"subject_ids": [key], "image_utm_left": [utm_left], "image_utm_bottom": [utm_bottom],
-                               "image_utm_right": [utm_right], "image_utm_top": [utm_top], "site": site, "event": event,
-                               "resolution": [resolution], "subject_reference": [subject_reference]})
+        bounds = pd.DataFrame({
+            "subject_ids": [key],
+            "image_utm_left": [utm_left],
+            "image_utm_bottom": [utm_bottom],
+            "image_utm_right": [utm_right],
+            "image_utm_top": [utm_top],
+            "site": site,
+            "event": event,
+            "resolution": [resolution],
+            "subject_reference": [subject_reference]
+        })
 
     return bounds
 
@@ -214,8 +222,10 @@ def project_box(df):
     df["box_utm_top"] = df.image_utm_top - (df.resolution * (df.y + df.height))
 
     # Create geopandas
-    geoms = [box(left, bottom, right, top) for left, bottom, right, top in
-             zip(df.box_utm_left, df.box_utm_bottom, df.box_utm_right, df.box_utm_top)]
+    geoms = [
+        box(left, bottom, right, top)
+        for left, bottom, right, top in zip(df.box_utm_left, df.box_utm_bottom, df.box_utm_right, df.box_utm_top)
+    ]
     gdf = gpd.GeoDataFrame(df, geometry=geoms)
 
     # set CRS
@@ -301,15 +311,18 @@ def spatial_join(gdf, IoU_threshold=0.4, buffer_size=1, client=None):
     """
 
     # Turn buffered points into boxes
-    gdf["bbox"] = [box(left, bottom, right, top) for left, bottom, right, top in
-                   gdf.geometry.buffer(buffer_size).bounds.values]
+    gdf["bbox"] = [
+        box(left, bottom, right, top) for left, bottom, right, top in gdf.geometry.buffer(buffer_size).bounds.values
+    ]
 
     # for each overlapping image
     results = []
     if client:
         futures = []
         for name, group in gdf.groupby("subject_ids"):
-            future = client.submit(spatial_join_image, group=group, IoU_threshold=IoU_threshold,
+            future = client.submit(spatial_join_image,
+                                   group=group,
+                                   IoU_threshold=IoU_threshold,
                                    buffer_size=buffer_size)
             futures.append(future)
         wait(futures)
@@ -364,7 +377,12 @@ def calculate_IoU(geom, match):
     return iou
 
 
-def run(classifications_file=None, savedir=".", download=False, generate=False, min_version=300, debug=False,
+def run(classifications_file=None,
+        savedir=".",
+        download=False,
+        generate=False,
+        min_version=300,
+        debug=False,
         client=None):
     # Authenticate
     if download:
@@ -422,5 +440,9 @@ if __name__ == "__main__":
     # client = start_cluster.start(cpus=40, mem_size="8GB")
     client = None
 
-    fname = run(savedir="../App/Zooniverse/data/", download=True,
-                generate=False, min_version=300, client=client, debug=False)
+    fname = run(savedir="../App/Zooniverse/data/",
+                download=True,
+                generate=False,
+                min_version=300,
+                client=client,
+                debug=False)

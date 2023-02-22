@@ -8,8 +8,7 @@ from shapely.geometry import box
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description='Simple script for cutting tif into tiles')
+    parser = argparse.ArgumentParser(description='Simple script for cutting tif into tiles')
     parser.add_argument("--path")
     parser.add_argument("--save_dir", default=".")
     parser.add_argument("--patch_size", default=1500)
@@ -41,17 +40,18 @@ def getTileGeom(transform, x, y, squareDim):
         raise ValueError("x = {}, y={}, transfrom={}".format(x, y, transform))
 
     corner2 = (x + squareDim, y + squareDim) * transform
-    return box(corner1[0], corner1[1],
-               corner2[0], corner2[1])
+    return box(corner1[0], corner1[1], corner2[0], corner2[1])
 
 
 # Write the passed in dataset as a GeoTIFF
 def writeImageAsGeoTIFF(img, transform, metadata, crs, filename):
-    metadata.update({"driver": "GTiff",
-                     "height": img.shape[1],
-                     "width": img.shape[2],
-                     "transform": transform,
-                     "crs": crs})
+    metadata.update({
+        "driver": "GTiff",
+        "height": img.shape[1],
+        "width": img.shape[2],
+        "transform": transform,
+        "crs": crs
+    })
     with rasterio.open(filename + ".tif", "w", **metadata) as dest:
         dest.write(img)
 
@@ -59,11 +59,7 @@ def writeImageAsGeoTIFF(img, transform, metadata, crs, filename):
 # Crop the dataset using the generated box and write it out as a GeoTIFF
 def getCellFromGeom(img, geom, filename, count):
     crop, cropTransform = mask(img, [geom], crop=True)
-    writeImageAsGeoTIFF(crop,
-                        cropTransform,
-                        img.meta,
-                        img.crs,
-                        filename + "_" + str(count))
+    writeImageAsGeoTIFF(crop, cropTransform, img.meta, img.crs, filename + "_" + str(count))
 
 
 def run(path, save_dir, patch_size=1500):

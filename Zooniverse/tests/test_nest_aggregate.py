@@ -74,10 +74,15 @@ def test_parse_birds(csv_data):
 # print("{} non-empty frames".format(len(gdf.classification_id.unique())))
 # assert len(gdf.classification_id.unique()) < debug_data.shape[0]
 
+
 @pytest.mark.parametrize("download", [True, False])
 def test_run(download):
-    nest_aggregate.run("data/everglades-watch-classifications.csv", min_version=min_version, download=download,
-                       generate=False, savedir="output", debug=False)
+    nest_aggregate.run("data/everglades-watch-classifications.csv",
+                       min_version=min_version,
+                       download=download,
+                       generate=False,
+                       savedir="output",
+                       debug=False)
     assert os.path.exists("output/everglades-watch-classifications.shp")
     assert os.path.exists("output/parsed_annotations.csv")
 

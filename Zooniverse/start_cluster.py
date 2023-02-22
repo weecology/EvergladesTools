@@ -15,11 +15,8 @@ def collect():
 
 
 def args():
-    parser = argparse.ArgumentParser(
-        description='Simple training script for training a RetinaNet network.')
-    parser.add_argument('--debug',
-                        help='Run local version without GPU',
-                        action='store_true')
+    parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
+    parser.add_argument('--debug', help='Run local version without GPU', action='store_true')
     parser.add_argument('--workers', help='Number of dask workers', default="4")
     parser.add_argument('--memory_worker', help='GB memory per worker', default="10")
 
@@ -35,10 +32,8 @@ def start_tunnel():
     """
     host = socket.gethostname()
     print("To tunnel into dask dashboard:")
-    print("For GPU dashboard: ssh -N -L 8787:%s:8787 -l b.weinstein hpg2.rc.ufl.edu" %
-          (host))
-    print("For CPU dashboard: ssh -N -L 8781:%s:8781 -l b.weinstein hpg2.rc.ufl.edu" %
-          (host))
+    print("For GPU dashboard: ssh -N -L 8787:%s:8787 -l b.weinstein hpg2.rc.ufl.edu" % (host))
+    print("For CPU dashboard: ssh -N -L 8781:%s:8781 -l b.weinstein hpg2.rc.ufl.edu" % (host))
 
     # flush system
     sys.stdout.flush()
@@ -74,8 +69,7 @@ def start(cpus=0, gpus=0, mem_size="10GB"):
         # job args
         extra_args = [
             "--error=/orange/idtrees-collab/logs/dask-worker-%j.err", "--account=ewhite",
-            "--output=/orange/idtrees-collab/logs/dask-worker-%j.out", "--partition=gpu",
-            "--gpus=1"
+            "--output=/orange/idtrees-collab/logs/dask-worker-%j.out", "--partition=gpu", "--gpus=1"
         ]
 
         cluster = SLURMCluster(processes=1,
