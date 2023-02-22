@@ -18,28 +18,21 @@ def utm_project(path):
     dst_crs = 'EPSG:32617'
 
     with rasterio.open(path) as src:
-        transform, width, height = calculate_default_transform(
-            src.crs, dst_crs, src.width, src.height, *src.bounds)
+        transform, width, height = calculate_default_transform(src.crs, dst_crs, src.width, src.height, *src.bounds)
         kwargs = src.meta.copy()
-        kwargs.update({
-            'crs': dst_crs,
-            'transform': transform,
-            'width': width,
-            'height': height
-        })
+        kwargs.update({'crs': dst_crs, 'transform': transform, 'width': width, 'height': height})
 
         dest_name = "{}_projected.tif".format(os.path.splitext(path)[0])
 
         with rasterio.open(dest_name, 'w', **kwargs) as dst:
             for i in range(1, src.count + 1):
-                reproject(
-                    source=rasterio.band(src, i),
-                    destination=rasterio.band(dst, i),
-                    src_transform=src.transform,
-                    src_crs=src.crs,
-                    dst_transform=transform,
-                    dst_crs=dst_crs,
-                    resampling=Resampling.nearest)
+                reproject(source=rasterio.band(src, i),
+                          destination=rasterio.band(dst, i),
+                          src_transform=src.transform,
+                          src_crs=src.crs,
+                          dst_transform=transform,
+                          dst_crs=dst_crs,
+                          resampling=Resampling.nearest)
 
     return dest_name
 
@@ -85,8 +78,14 @@ def find_files(path):
         # Create dict
         # crs = d.crs.to_epsg()
         crs = None
-        images[png_name] = {"subject_reference": counter, "bounds": [left, bottom, right, top], "crs": crs,
-                            "site": site_name, "resolution": d.res, "filename": png_name}
+        images[png_name] = {
+            "subject_reference": counter,
+            "bounds": [left, bottom, right, top],
+            "crs": crs,
+            "site": site_name,
+            "resolution": d.res,
+            "filename": png_name
+        }
         counter += 1
 
     return images

@@ -23,10 +23,15 @@ import glob
 # Setup method
 @pytest.fixture()
 def extract_images(tmpdir):
-    aggregate.run("data/everglades-watch-classifications.csv", min_version=300, download=False, generate=False,
-                  savedir="output", debug=True)
+    aggregate.run("data/everglades-watch-classifications.csv",
+                  min_version=300,
+                  download=False,
+                  generate=False,
+                  savedir="output",
+                  debug=True)
     extract.run(image_data="data/everglades-watch-subjects.csv",
-                classification_shp="output/everglades-watch-classifications.shp", savedir=tmpdir)
+                classification_shp="output/everglades-watch-classifications.shp",
+                savedir=tmpdir)
 
 
 @pytest.fixture()
@@ -102,7 +107,8 @@ def test_split_test_train(extract_images, annotations):
 
 def test_train_model(extract_images, annotations, tmpdir):
     comet_logger = CometLogger(api_key="ypQZhYfs3nSyKzOfz13iuJpj2",
-                               project_name="everglades-species", workspace="bw4sz")
+                               project_name="everglades-species",
+                               workspace="bw4sz")
 
     train, test = create_species_model.split_test_train(annotations)
     train_path = "{}/train.csv".format(tmpdir)
@@ -111,5 +117,8 @@ def test_train_model(extract_images, annotations, tmpdir):
     test_path = "{}/test.csv".format(tmpdir)
     test.to_csv(test_path, index=False)
 
-    create_species_model.train_model(train_path=train_path, test_path=test_path, epochs=1, comet_logger=comet_logger,
+    create_species_model.train_model(train_path=train_path,
+                                     test_path=test_path,
+                                     epochs=1,
+                                     comet_logger=comet_logger,
                                      debug=True)

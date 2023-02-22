@@ -29,8 +29,10 @@ def shapefile_to_annotations(shapefile, rgb_path, savedir="."):
 
     # define in image coordinates and buffer to create a box
     gdf["geometry"] = [Point(x, y) for x, y in zip(gdf.x.astype(float), gdf.y.astype(float))]
-    gdf["geometry"] = [box(int(left), int(bottom), int(right), int(top)) for left, bottom, right, top in
-                       gdf.geometry.buffer(25).bounds.values]
+    gdf["geometry"] = [
+        box(int(left), int(bottom), int(right), int(top))
+        for left, bottom, right, top in gdf.geometry.buffer(25).bounds.values
+    ]
 
     # extent bounds
     df = gdf.bounds
@@ -177,8 +179,6 @@ def run(shp_dir, empty_frames_path=None, save_dir="."):
 
 
 if __name__ == "__main__":
-    run(
-        shp_dir="/blue/ewhite/everglades/Zooniverse/parsed_images/",
+    run(shp_dir="/blue/ewhite/everglades/Zooniverse/parsed_images/",
         empty_frames_path="/blue/ewhite/everglades/Zooniverse/parsed_images/empty_frames.csv",
-        save_dir="/blue/ewhite/everglades/Zooniverse/predictions/"
-    )
+        save_dir="/blue/ewhite/everglades/Zooniverse/predictions/")
