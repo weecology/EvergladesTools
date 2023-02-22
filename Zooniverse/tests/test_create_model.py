@@ -20,9 +20,14 @@ import glob
 # Setup method
 @pytest.fixture()
 def extract_images(tmpdir):
-    aggregate.run("data/everglades-watch-classifications.csv", min_version=300, download=False, generate=False,
-                  savedir="data", debug=True)
-    extract.run(image_data="data/everglades-watch-subjects.csv", classification_csv="data/parsed_annotations.csv",
+    aggregate.run("data/everglades-watch-classifications.csv",
+                  min_version=300,
+                  download=False,
+                  generate=False,
+                  savedir="data",
+                  debug=True)
+    extract.run(image_data="data/everglades-watch-subjects.csv",
+                classification_csv="data/parsed_annotations.csv",
                 savedir="output")
 
 
