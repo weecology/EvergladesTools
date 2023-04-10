@@ -29,10 +29,9 @@ birds <- birds %>%
   as.data.frame() %>%
   bind_cols(bird_coords) %>%
   mutate(species = bird_codes[label,]) %>%
-  mutate(event = as.Date(event, "%m_%d_%Y")) %>%
+  mutate(event = as.Date(Date, "%m_%d_%Y")) %>%
   mutate(year = year(event)) %>%
-  mutate(bird_id = row_number()) %>%
-  select(site, year, species, bird_id, lat, long)
+  select(site = Site, year = Year, species, bird_id, lat, long)
 
 # Add random bird locations to field nests
 # Provides the sampling locations so reviewers don't know that a
