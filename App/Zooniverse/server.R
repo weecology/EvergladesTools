@@ -20,9 +20,12 @@ source("load_data.R")
 shinyServer(function(input, output, session) {
   output$zooniverse_anotation<-renderPlot(zooniverse_complete())
 
-  #Setmapbox key
-  readRenviron("source_token.txt")
-  MAPBOX_ACCESS_TOKEN=Sys.getenv("MAPBOX_ACCESS_TOKEN")
+  #Set mapbox key
+  if (file.exists("source_token.txt"))
+    readRenviron("source_token.txt")
+  MAPBOX_ACCESS_TOKEN = Sys.getenv("MAPBOX_ACCESS_TOKEN")
+  if (is.na(MAPBOX_ACCESS_TOKEN) || MAPBOX_ACCESS_TOKEN == '')
+    paste("Set MAPBOX ACCESS TOKEN,", "Refer to the README.")
 
   #Create pages
   output$landing<-landing_page(selected_boxes)
