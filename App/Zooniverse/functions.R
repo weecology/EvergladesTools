@@ -188,7 +188,7 @@ update_nests<-function(mapbox_tileset, df, bird_df, show_nests, show_birds,
       )
   if (!is.null(lng) & !is.null(lat) & !is.null(zoom)) {
     map <- map %>%
-      addCircles(data = focal_position, stroke = T, fillOpacity = 0, radius = .8, color="orange") %>%
+      addCircles(data = focal_position, stroke = T, fillOpacity = 0, radius = .5, color="orange") %>%
       setView(lng, lat, zoom)
   }
   if (show_nests) {
