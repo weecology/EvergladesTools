@@ -1,5 +1,5 @@
 #
-# This is the server logic of a Shiny web application. You can run the 
+# This is the server logic of a Shiny web application. You can run the
 # application by clicking 'Run App' above.
 
 library(shiny)
@@ -14,6 +14,7 @@ source("time_page.R")
 source("about_page.R")
 source("prediction_page.R")
 source("predicted_nest_page.R")
+source("secured_nest_page.R")
 source("functions.R")
 source("load_data.R")
 
@@ -33,78 +34,79 @@ shinyServer(function(input, output, session) {
   output$about<-about_page()
   output$predicted<-predicted_page(df)
   output$predicted_nests<-predicted_nest_page(nestdf)
-  
+  output$current_nests<-current_nest_page(nestdf)
+
   ####Landing page###
   output$map <- create_map(colonies)
   landing_filter<-reactive({
     #filter based on selection
     if(is.null(input$landing_site)){return(selected_boxes)}
     if(!"All" %in% input$landing_site){
-      to_plot <- selected_boxes %>% filter(site %in% input$landing_site) 
+      to_plot <- selected_boxes %>% filter(site %in% input$landing_site)
     }
     else{
       to_plot<-selected_boxes
     }
     return(to_plot)
-  }) 
-  
+  })
+
   landing_map_select<-reactive({
     #filter based on selection
     if(is.null(input$landing_site)){return(colonies)}
     if(!"All" %in% input$landing_site){
-      to_plot <- colonies %>% filter(colony %in% input$landing_site) 
+      to_plot <- colonies %>% filter(colony %in% input$landing_site)
     } else{
       to_plot<-colonies
     }
     return(to_plot)
-  }) 
-  
+  })
+
   observe({
     leafletProxy("map", data=landing_map_select()) %>% clearMarkers() %>% addMarkers(popup=~colony)
   })
-  
+
   observe({
     output$site_totals_plot<-renderPlot(site_totals(selected_boxes=landing_filter()))
   })
 
   output$summary <- renderText(paste("There have been",nrow(raw_data),"classifications on",length(unique(raw_data$subject_id)),"non-empty frames by", length(unique(raw_data$user_name)),"users at",length(unique(raw_data$site)),"sites"))
   output$totals_plot<-renderPlot(totals_plot(selected_boxes))
-  
+
   # View Zooniverse annotations
   time_series_filter<-reactive({
     #filter based on selection
-    to_plot <- selected_boxes %>% filter(site %in% input$timeseries_site, species %in% input$timeseries_species,behavior %in% input$timeseries_behavior) 
+    to_plot <- selected_boxes %>% filter(site %in% input$timeseries_site, species %in% input$timeseries_species,behavior %in% input$timeseries_behavior)
     return(to_plot)
-  }) 
-  
+  })
+
   observe({
     output$site_phenology_plot<-renderPlot(site_phenology(selected_boxes=time_series_filter()))
   })
-  
+
   ###Species page###
   output$label_heatmap<-renderPlot(behavior_heatmap(selected_boxes))
-  
+
   colony_filter<-reactive({
   #filter based on selection
-    to_plot <- selected_boxes %>% filter(tileset_id==input$selected_image) 
+    to_plot <- selected_boxes %>% filter(tileset_id==input$selected_image)
     return(to_plot)
   })
-  
+
   observe({
     output$colony_map<-renderLeaflet(plot_annotations(selected_boxes =colony_filter(),MAPBOX_ACCESS_TOKEN))
   })
-  
+
   ##Prediction page##
   prediction_filter<-reactive({
     #filter based on selection
-    to_plot <- df %>% filter(tileset_id==input$prediction_tileset) 
+    to_plot <- df %>% filter(tileset_id==input$prediction_tileset)
     return(to_plot)
   })
-  
+
   output$predicted_time_plot<-renderPlot(time_predictions(df))
   output$sample_prediction_map<-renderLeaflet(plot_predictions(df=prediction_filter(),MAPBOX_ACCESS_TOKEN))
   output$Zooniverse_Predicted_Table<-renderTable(compare_counts(df, selected_boxes))
-  
+
   ###Nest Page###
 
   # No focal position to start, but will be updated
@@ -175,7 +177,7 @@ shinyServer(function(input, output, session) {
   output$nest_map<-renderLeaflet(plot_nests(nestdf %>% filter(Site=="Joule") %>% filter(first_obs <= min(Date)),
                                             df %>% filter(site=="Joule") %>% filter(event==min(event)),
                                             MAPBOX_ACCESS_TOKEN))
-  
+
   nest_map_site_filter<-reactive({
     selected_nests<-nestdf %>% filter(Site == input$nest_site)
     return(selected_nests)
@@ -321,5 +323,29 @@ shinyServer(function(input, output, session) {
       input$show_birds,
       MAPBOX_ACCESS_TOKEN,
       focal_position)
+  })
+
+  ## Secured Nest Page ##
+  # define some basic credentials (on data.frame)
+  credentials <- data.frame(
+    user = c("shiny", "shinymanager"), # mandatory
+    password = c("azerty", "12345"), # mandatory
+    start = c("2019-04-15"), # optional (all others)
+    expire = c(NA, "2019-12-31"),
+    admin = c(FALSE, TRUE),
+    comment = "Simple and secure authentification mechanism
+  for single ‘Shiny’ applications.",
+    stringsAsFactors = FALSE
+  )
+
+  # authentication module
+  auth <- callModule(
+    module = auth_server,
+    id = "auth",
+    check_credentials = check_credentials(credentials)
+  )
+
+  output$res_auth <- renderPrint({
+    reactiveValuesToList(auth)
   })
 })
