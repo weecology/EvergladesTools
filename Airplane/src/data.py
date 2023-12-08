@@ -2,6 +2,7 @@ import os
 import random
 import glob
 import shutil
+from active_learning import active_learner
 
 def choose_images(image_dir, evaluation=None):
     """Choose images to annotate.
@@ -16,9 +17,11 @@ def choose_images(image_dir, evaluation=None):
     
     if evaluation is None:
         chosen_images = random.sample(pool, 3)
+    else:   
+        active_learner(evaluation,pool, strategy="uncertainty")
+
 
     return chosen_images
-
 
 
 def create_label_studio_json(image_url, predictions):
@@ -51,13 +54,12 @@ def create_label_studio_json(image_url, predictions):
     return json_string
 
 # check_if_complete label studio images are done
-def check_if_complete():
+def check_if_complete(annotations):
     """Check if any new images have been labeled.
     
     Returns:
         bool: True if new images have been labeled, False otherwise.
     """
-    convert_json_to_dataframe
 
 import json
 import pandas as pd

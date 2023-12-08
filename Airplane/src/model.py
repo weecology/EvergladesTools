@@ -1,5 +1,6 @@
 from deepforest import main
 import os
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 def evaluate(model, test_csv):
     """Evaluate a model on labeled images.
@@ -28,7 +29,7 @@ def load(path):
 
     return main.deepforest.load_from_checkpoint(path)
 
-def train(annotations, image_paths):
+def train(model, annotations, checkpoint_dir):
     """Train a model on labeled images.
     
     Args:
@@ -37,8 +38,10 @@ def train(annotations, image_paths):
     Returns:
         main.deepforest: A trained deepforest model.
     """
-    
-    model = main.deepforest.deepforest()
-    model.train(image_paths)
-    
+    annotations.to_csv(os.path.join(checkpoint_dir,"train.csv"), index=False)
+    model.config["train"]["csv_file"] = os.path.join(checkpoint_dir,"train.csv")
+    checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_dir)
+    trainer = model.create_trainer(callbacks=[checkpoint_callback])
+    model.trainer.fit(model)
+
     return model

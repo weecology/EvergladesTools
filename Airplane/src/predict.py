@@ -9,7 +9,6 @@ def predict(model, image_paths):
     Returns:
         list: A list of image predictions.
     """
-    
     predictions = []
     for image_path in image_paths:
         prediction = model.predict_image(image_path)
