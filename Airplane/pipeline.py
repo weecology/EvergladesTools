@@ -44,20 +44,21 @@ def iterate(checkpoint_dir, images_to_annotate_dir, annotated_image_dir, test_cs
         data.move_images(src_dir=images_to_annotate_dir,dst_dir=annotated_image_dir, annotations=annotations)
 
         # Remove images that have been labeled on the label_studio server
-        upload.remove_annotated_image_remote_server(annotations)
+        #upload.remove_annotated_image_remote_server(annotations)
 
         # Train model and save checkpoint
         train_df = data.gather_training_data()
         model = model.train(train_df, test_csv, checkpoint_dir)
 
-        # Choose images
+        # Choose new images to annotate
         images = data.choose_images(images_to_annotate_dir, evaluation)
 
         # Predict images
-        predicted_images = predict.predict(model, images)
+        preannotations = predict.predict(model, images)
 
         # Upload images to annotation platform
-        upload.upload_images(predicted_images, user, host, folder_name)
+        upload.upload_images(images, user, host, folder_name)
+        upload.upload_preannotations(preannotations, user, host, folder_name)
 
 if __name__ == "__main__":
 

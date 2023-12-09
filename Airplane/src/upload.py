@@ -2,6 +2,15 @@ import paramiko
 import requests
 import os
 import subprocess
+import data
+
+def upload_preannotations(preannotations, user, host, folder_name):
+    # Upload preannotations to label studio, first convert them to json from pandas dataframe
+    json_string = data.convert_dataframe_to_json(preannotations)
+    # save json and send it to label studio using scp   
+    with open("preannotations.json", "w") as f:
+        f.write(json_string)    
+    subprocess.run(["scp", "preannotations.json", "{}@{}:{}}".format(user, host, folder_name)]) 
 
 def upload_images(images, user, host, folder_name):
     # SCP file transfer
