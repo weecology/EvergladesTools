@@ -2,6 +2,8 @@ import os
 import random
 import glob
 import shutil
+import json
+import pandas as pd
 from active_learning import active_learner
 
 def choose_images(image_dir, evaluation=None):
@@ -18,8 +20,7 @@ def choose_images(image_dir, evaluation=None):
     if evaluation is None:
         chosen_images = random.sample(pool, 3)
     else:   
-        active_learner(evaluation,pool, strategy="uncertainty")
-
+        active_learner(evaluation, pool, strategy="uncertainty")
 
     return chosen_images
 
@@ -61,8 +62,10 @@ def check_if_complete(annotations):
         bool: True if new images have been labeled, False otherwise.
     """
 
-import json
-import pandas as pd
+    if annotations.shape[0] > 0:
+        return True
+    else:
+        return False
 
 def convert_json_to_dataframe(json_string):
     # Load JSON string into dictionary
@@ -100,7 +103,7 @@ def convert_json_to_dataframe(json_string):
     return df
 
 # Move images from images_to_annotation to images_annotated 
-def move_images(annotations):
+def move_images(annotations, src_dir, dst_dir):
     """Move images from the images_to_annotate folder to the images_annotated folder.
     
     Args:
@@ -111,7 +114,18 @@ def move_images(annotations):
     """
     images = annotations.image_path.unique()
     for image in images:
-        src = os.path.join("images_to_annotate", os.path.basename(image))
-        dst = os.path.join("images_annotated", os.path.basename(image))
+        src = os.path.join(src_dir, os.path.basename(image))
+        dst = os.path.join(dst_dir, os.path.basename(image))
                            
         shutil.move(src, dst)
+
+def gather_data(train_dir):
+    train_csvs = glob.glob(os.path.join(train_dir,"*.csv"))
+    df = []
+    for x in train_csvs:
+        df.append(pd.read_csv(x))
+    df = pd.concat(df)
+    df.drop_duplicates(inplace=True)
+    
+    return df
+
