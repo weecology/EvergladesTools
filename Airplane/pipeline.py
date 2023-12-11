@@ -1,9 +1,9 @@
 from src import data, model, predict, upload
 import datetime
 import os
-import configparser
+import yaml
 
-def iterate(checkpoint_dir, images_to_annotate_dir, annotated_image_dir, test_csv, user, host, folder_name, model_checkpoint=None):
+def iterate(checkpoint_dir, images_to_annotate_dir, annotated_images_dir, test_csv, user, host, folder_name, password, model_checkpoint=None):
     """A Deepforest pipeline for rapid annotation and model iteration.
 
     Args:
@@ -21,13 +21,13 @@ def iterate(checkpoint_dir, images_to_annotate_dir, annotated_image_dir, test_cs
     """
     # Check event for there new annotations
     # Download labeled annotations
-    annotations = data.download_annotations()
+    annotations = upload.download_annotations(user=user, host=host, folder_name=folder_name, annotated_images_dir=annotated_images_dir, password=password)
     complete = data.check_if_complete(annotations)
     
     if complete:
         # Save new training data with timestamp
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        train_path = os.path.join(annotated_image_dir, "train_{}.csv".format(timestamp))
+        train_path = os.path.join(annotated_images_dir, "train_{}.csv".format(timestamp))
         annotations.to_csv(train_path, index=False)
 
         # Load existing model
@@ -41,37 +41,42 @@ def iterate(checkpoint_dir, images_to_annotate_dir, annotated_image_dir, test_cs
             evaluation = None
 
         # Move annotated images out of local pool
-        data.move_images(src_dir=images_to_annotate_dir,dst_dir=annotated_image_dir, annotations=annotations)
+        data.move_images(src_dir=images_to_annotate_dir,dst_dir=annotated_images_dir, annotations=annotations)
 
         # Remove images that have been labeled on the label_studio server
-        #upload.remove_annotated_image_remote_server(annotations)
+        #upload.remove_annotated_image_remote_server(annotations, password, user, host, folder_name)
 
         # Train model and save checkpoint
         train_df = data.gather_training_data()
-        model = model.train(train_df, test_csv, checkpoint_dir)
+        m = model.train(train_df, test_csv, checkpoint_dir)
 
         # Choose new images to annotate
         images = data.choose_images(images_to_annotate_dir, evaluation)
 
         # Predict images
-        preannotations = predict.predict(model, images)
+        preannotations = predict.predict(m, images)
 
         # Upload images to annotation platform
-        upload.upload_images(images, user, host, folder_name)
-        upload.upload_preannotations(preannotations, user, host, folder_name)
+        upload.upload_images(images, user, host, folder_name, password)
+        upload.upload_preannotations(preannotations, user, host, folder_name, password)
 
 if __name__ == "__main__":
-
-    # Read config
-    config = configparser.ConfigParser()
+    # Read config from pipeline_config.yml
+    config = yaml.safe_load(open("Airplane/pipeline_config.yml"))
+    
+    # Read password from password.txt
+    with open("Airplane/password.txt", "r") as f:
+        password = f.read().strip()
     
     iterate(
         checkpoint_dir="/blue/ewhite/everglades/label_studio/checkpoints",
         images_to_annotate_dir=config["images_to_annotate_dir"],
         annotated_images_dir=config["annotated_images_dir"],
         model_checkpoint=config["model_checkpoint"],
-        user=config["ben"],
+        user=config["user"],
         host=config["server_url"],
-        folder_name=config["folder_name"]
+        test_csv=config["test_csv"],
+        folder_name=config["folder_name"],
+        password=password
         )
 

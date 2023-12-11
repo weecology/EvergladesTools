@@ -4,7 +4,7 @@ import glob
 import shutil
 import json
 import pandas as pd
-from active_learning import active_learner
+from src.active_learning import active_learner
 
 def choose_images(image_dir, evaluation=None):
     """Choose images to annotate.
@@ -67,40 +67,16 @@ def check_if_complete(annotations):
     else:
         return False
 
-def convert_json_to_dataframe(json_string):
-    # Load JSON string into dictionary
-    data_dict = json.loads(json_string)
+# con for a json that looks like 
+#{'id': 539, 'created_username': ' vonsteiny@gmail.com, 10', 'created_ago': '0\xa0minutes', 'task': {'id': 1962, 'data': {...}, 'meta': {}, 'created_at': '2023-01-18T20:58:48.250374Z', 'updated_at': '2023-01-18T20:58:48.250387Z', 'is_labeled': True, 'overlap': 1, 'inner_id': 381, 'total_annotations': 1, ...}, 'completed_by': {'id': 10, 'first_name': '', 'last_name': '', 'email': 'vonsteiny@gmail.com'}, 'result': [], 'was_cancelled': False, 'ground_truth': False, 'created_at': '2023-01-30T21:43:35.447447Z', 'updated_at': '2023-01-30T21:43:35.447460Z', 'lead_time': 29.346, 'parent_prediction': None, 'parent_annotation': None}
+    
+def convert_json_to_dataframe(json_file):
+    # Open JSON file
+    with open(json_file) as f:
+        data = json.load(f)
 
-    # Extract relevant information
-    image_url = data_dict['data']['image']
-    annotations = data_dict['annotations']
-    predictions = data_dict['predictions']
+    image = data["task"]["data"]["image"]
 
-    # Prepare list to hold all bounding box data
-    bounding_boxes = []
-
-    # Extract bounding box data from annotations
-    for annotation in annotations:
-        for result in annotation['result']:
-            box = result['value']
-            box['label'] = result['from_name']
-            box['source'] = 'annotation'
-            box['image_url'] = image_url
-            bounding_boxes.append(box)
-
-    # Extract bounding box data from predictions
-    for prediction in predictions:
-        for result in prediction['result']:
-            box = result['value']
-            box['label'] = result['from_name']
-            box['source'] = 'prediction'
-            box['image_url'] = image_url
-            bounding_boxes.append(box)
-
-    # Convert list of bounding boxes to DataFrame
-    df = pd.DataFrame(bounding_boxes)
-
-    return df
 
 # Move images from images_to_annotation to images_annotated 
 def move_images(annotations, src_dir, dst_dir):
