@@ -21,36 +21,35 @@ def iterate(checkpoint_dir, images_to_annotate_dir, annotated_images_dir, test_c
     """
     # Check event for there new annotations
     # Download labeled annotations
-    annotations = upload.download_annotations(user=user, host=host, folder_name=folder_name, annotated_images_dir=annotated_images_dir, password=password)
+    annotations = upload.download_annotations(user=user, host=host, folder_name=folder_name, annotated_images_dir=annotated_images_dir, password=password, archive=True)
     complete = data.check_if_complete(annotations)
-    
     if complete:
         # Save new training data with timestamp
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         train_path = os.path.join(annotated_images_dir, "train_{}.csv".format(timestamp))
         annotations.to_csv(train_path, index=False)
 
+        # Move annotated images out of local pool
+        data.move_images(src_dir=images_to_annotate_dir, dst_dir=annotated_images_dir, annotations=annotations)
+
+        #Remove images that have been labeled on the label_studio server
+        upload.remove_annotated_images_remote_server(annotations=annotations, user=user, host=host, folder_name=folder_name, password=password)
+
         # Load existing model
         if model_checkpoint:
-            m = model.load(model_checkpoint)
-            evaluation = model.evaluate(m)
-            print(evaluation)
+            m = model.load(model_checkpoint, annotations)
         elif os.path.exists(checkpoint_dir):
             model.get_latest_checkpoint(checkpoint_dir)
         else:
             evaluation = None
 
-        # Move annotated images out of local pool
-        data.move_images(src_dir=images_to_annotate_dir,dst_dir=annotated_images_dir, annotations=annotations)
-
-        # Remove images that have been labeled on the label_studio server
-        #upload.remove_annotated_image_remote_server(annotations, password, user, host, folder_name)
-
         # Train model and save checkpoint
-        train_df = data.gather_training_data()
-        m = model.train(train_df, test_csv, checkpoint_dir)
+        train_df = data.gather_data(annotated_images_dir)
+        m = model.train(model=m, annotations=train_df, test_csv=test_csv, checkpoint_dir=checkpoint_dir, train_image_dir=annotated_images_dir)
 
         # Choose new images to annotate
+        #evaluation = model.evaluate(m, test_csv=test_csv)
+        #print(evaluation)
         images = data.choose_images(images_to_annotate_dir, evaluation)
 
         # Predict images

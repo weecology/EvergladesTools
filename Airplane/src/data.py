@@ -70,13 +70,47 @@ def check_if_complete(annotations):
 # con for a json that looks like 
 #{'id': 539, 'created_username': ' vonsteiny@gmail.com, 10', 'created_ago': '0\xa0minutes', 'task': {'id': 1962, 'data': {...}, 'meta': {}, 'created_at': '2023-01-18T20:58:48.250374Z', 'updated_at': '2023-01-18T20:58:48.250387Z', 'is_labeled': True, 'overlap': 1, 'inner_id': 381, 'total_annotations': 1, ...}, 'completed_by': {'id': 10, 'first_name': '', 'last_name': '', 'email': 'vonsteiny@gmail.com'}, 'result': [], 'was_cancelled': False, 'ground_truth': False, 'created_at': '2023-01-30T21:43:35.447447Z', 'updated_at': '2023-01-30T21:43:35.447460Z', 'lead_time': 29.346, 'parent_prediction': None, 'parent_annotation': None}
     
-def convert_json_to_dataframe(json_file):
+def convert_json_to_dataframe(x):
     # Open JSON file
-    with open(json_file) as f:
+    with open(x) as f:
         data = json.load(f)
+    image = os.path.basename(data["task"]["data"]["image"])
 
-    image = data["task"]["data"]["image"]
+    if len(data["result"]) == 0:
+        result = {
+                "image_path": image,
+                "xmin": None,
+                "ymin": None,
+                "xmax": None,
+                "ymax": None,
+                "label": None
+            }
+    else:
+        # Loop through annotations and convert to pandas {'original_width': 6016, 'original_height': 4008, 'image_rotation': 0, 'value': {'x': 94.96474718276704, 'y': 22.132321974413898, 'width': 1.7739074476466308, 'height': 2.2484415320942235, 'rotation': 0, 'rectanglelabels': [...]}, 'id': 'UeovfQERjL', 'from_name': 'label', 'to_name': 'image', 'type': 'rectanglelabels', 'origin': 'manual'}
+        results = []
+        for annotation in data["result"]:
+            xmin = annotation["value"]["x"]
+            ymin = annotation["value"]["y"]
+            xmax = annotation["value"]["width"]
+            ymax = annotation["value"]["height"]
+            label = annotation["value"]["rectanglelabels"][0]
 
+            # Create dictionary
+            result = {
+                "image_path": image,
+                "xmin": xmin,
+                "ymin": ymin,
+                "xmax": xmax,
+                "ymax": ymax,
+                "label": label
+            }
+
+            # Append to list
+            results.append(result)
+        df = pd.DataFrame(results)
+        
+        return df
+        
 
 # Move images from images_to_annotation to images_annotated 
 def move_images(annotations, src_dir, dst_dir):
@@ -93,7 +127,10 @@ def move_images(annotations, src_dir, dst_dir):
         src = os.path.join(src_dir, os.path.basename(image))
         dst = os.path.join(dst_dir, os.path.basename(image))
                            
-        shutil.move(src, dst)
+        try:
+            shutil.move(src, dst)
+        except FileNotFoundError:
+            continue
 
 def gather_data(train_dir):
     train_csvs = glob.glob(os.path.join(train_dir,"*.csv"))

@@ -20,9 +20,11 @@ def upload_images(images, user, host, folder_name):
         print(f"Uploaded {image} successfully")
 
 
-def download_annotations(user, host, folder_name, password, annotated_images_dir):
+def download_annotations(user, host, folder_name, password, annotated_images_dir, archive=False):
     """Download annotations from the Label Studio server.
-    
+    Args:
+        archive (bool, optional): Whether to move the annotations from the server to archive folder. Defaults to False.
+
     Returns:
         pandas.DataFrame: A DataFrame of annotations.
     """
@@ -42,26 +44,55 @@ def download_annotations(user, host, folder_name, password, annotated_images_dir
         local_path = os.path.join(annotated_images_dir, file)
         sftp.get(remote_path, local_path)
 
+        if archive:
+            # Archive annotations using SSH
+            archive_annotation_path = os.path.join(folder_name, "archive")
+            # sftp check if dir exists
+            try:
+                sftp.listdir(archive_annotation_path)
+            except FileNotFoundError:
+                raise FileNotFoundError("The archive directory {} does not exist.".format(archive_annotation_path))
+            # Need sudo to move files
+            #sftp.rename(remote_path, os.path.join(archive_annotation_path, file))
+
     # Loop through downloaded JSON files and convert them to dataframes
     annotations = []
-    for json_file in glob.glob(os.path.join(annotated_images_dir, "*.json")):
-        annotations.append(data.convert_json_to_dataframe(json_file))
+    json_glob = os.path.join(annotated_images_dir, "*.json")
+    json_files = list(glob.glob(json_glob))
+    for x in json_files:        
+        result = data.convert_json_to_dataframe(x)
+        if result is None:
+            continue
+        else:
+            annotations.append(result)
     annotations = pd.concat(annotations)
+
+    #Remove helper classes
+    annotations = annotations[~(annotations.label=="Help me!")]
 
     return annotations
 
-def remove_annotated_image_remote_server(annotations, user, host, folder_name, password):
+def remove_annotated_images_remote_server(annotations, user, host, folder_name, password):
     # SSH connection
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(host, username=user, password=password)
+    sftp = ssh.open_sftp()
 
     # Delete images using SSH
-    for image in annotations:
+    for image in annotations.image_path.unique():
         remote_path = os.path.join(folder_name, os.path.basename(image))
-        command = "rm {}".format(remote_path)
-        ssh.exec_command(command)
-        print(f"Deleted {image} successfully")
+        # Archive annotations using SSH
+        archive_annotation_path = os.path.join(folder_name, "archive")
+        # sftp check if dir exists
+        try:
+            sftp.listdir(archive_annotation_path)
+        except FileNotFoundError:
+            raise FileNotFoundError("The archive directory {} does not exist.".format(archive_annotation_path))
+        
+        #Need sudo
+        #sftp.rename(remote_path, os.path.join(archive_annotation_path, remote_path))
+        print(f"Archived {image} successfully")
 
     ssh.close()
     
