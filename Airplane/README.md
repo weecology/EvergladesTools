@@ -39,10 +39,7 @@ This will run the pipeline on the images in the specified directory, using the s
 
 # To Do
 
-- [ ] Hipergator to Serenity Authentication is currently ssh with a password, this will not work non-iteractively.
 - [ ] Instructions to set up a cron-job
 - [ ] DeepForest pull request for kwargs to pass to trainer https://github.com/weecology/DeepForest/issues/546
-- [ ] How to assess if annotations are complete
-- [ ] Formatting label-studio
 - [ ] Active learning strategy
 - [ ] Unit tests

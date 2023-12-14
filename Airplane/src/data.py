@@ -1,58 +1,51 @@
 import os
-import random
 import glob
 import shutil
 import json
 import pandas as pd
-from src.active_learning import active_learner
+import PIL
 
-def choose_images(image_dir, evaluation=None):
-    """Choose images to annotate.
-    
-    Args:
-        pool (list): A list of image paths to choose from.
-    
-    Returns:
-        list: A list of image paths to annotate.
-    """
-    pool = glob.glob(os.path.join(image_dir,"*")) # Get all images in the data directory
-    
-    if evaluation is None:
-        chosen_images = random.sample(pool, 3)
-    else:   
-        active_learner(evaluation, pool, strategy="uncertainty")
-
-    return chosen_images
-
-
-def create_label_studio_json(image_url, predictions):
+def create_label_studio_json(local_image_dir, remote_image_dir, preannotations):
     """Create a JSON string for the Label Studio API.
     """
-    # Prepare data dictionary
-    data = {
-        "image": image_url
-    }
+    predictions = []
+    for prediction in preannotations:
+        original_width = PIL.Image.open(os.path.join(local_image_dir,os.path.basename(prediction.image_path.unique()[0]))).size[0]
+        original_height = PIL.Image.open(os.path.join(local_image_dir,os.path.basename(prediction.image_path.unique()[0]))).size[1]
 
-    # Prepare predictions list
-    predictions_list = []
-    for prediction in predictions:
-        prediction_dict = {
-            "result": prediction.result,
-            "score": prediction.score,
-            "cluster": prediction.cluster
+        for index, row in prediction.iterrows():
+            result = {
+                "id": row.name,
+                "type": "rectanglelabels",
+                "from_name": "label",
+                "to_name": "image",
+                "original_width": original_width,
+                "original_height": original_height,
+                "image_rotation": 0,
+                "value": {
+                    "rotation": 0,
+                    "x": row['xmin']/original_width,
+                    "y": row['ymin']/original_height,
+                    "width": (row['xmax'] - row['xmin'])/original_width,
+                    "height": (row['ymax'] - row['ymin'])/original_height,
+                    "rectanglelabels": [row["label"]]
+                }
+            }
+            predictions.append(result)
+
+        data = {
+            "data": {
+                "image": os.path.join("/data/local-files/?d=input/",row.image_path)
+            },
+            "predictions": [{
+                "model_version":0,
+                "score": 1,
+                "result": predictions
+            }]
         }
-        predictions_list.append(prediction_dict)
 
-    # Prepare final dictionary
-    final_dict = {
-        "data": data,
-        "predictions": predictions_list
-    }
-
-    # Convert dictionary to JSON string
-    json_string = json.dumps(final_dict)
-
-    return json_string
+    json_obj = json.dumps(data)
+    return json_obj
 
 # check_if_complete label studio images are done
 def check_if_complete(annotations):
@@ -89,10 +82,10 @@ def convert_json_to_dataframe(x):
         # Loop through annotations and convert to pandas {'original_width': 6016, 'original_height': 4008, 'image_rotation': 0, 'value': {'x': 94.96474718276704, 'y': 22.132321974413898, 'width': 1.7739074476466308, 'height': 2.2484415320942235, 'rotation': 0, 'rectanglelabels': [...]}, 'id': 'UeovfQERjL', 'from_name': 'label', 'to_name': 'image', 'type': 'rectanglelabels', 'origin': 'manual'}
         results = []
         for annotation in data["result"]:
-            xmin = annotation["value"]["x"]
-            ymin = annotation["value"]["y"]
-            xmax = annotation["value"]["width"]
-            ymax = annotation["value"]["height"]
+            xmin = annotation["value"]["x"]/100 * annotation["original_width"]
+            ymin = annotation["value"]["y"]/100 * annotation["original_height"]
+            xmax = (annotation["value"]["width"]/100 + annotation["value"]["x"]/100 ) * annotation["original_width"]
+            ymax = (annotation["value"]["height"]/100 + annotation["value"]["y"]/100) * annotation["original_height"]
             label = annotation["value"]["rectanglelabels"][0]
 
             # Create dictionary
