@@ -87,7 +87,7 @@ def get_latest_checkpoint(checkpoint_dir, annotations):
     
     return m
 
-def predict(model, image_paths):
+def predict(model, image_paths, patch_size, patch_overlap):
     """Predict bounding boxes for images
     Args:
         model (main.deepforest): A trained deepforest model.
@@ -98,11 +98,6 @@ def predict(model, image_paths):
     predictions = []
     for image_path in image_paths:
         prediction = model.predict_tile(raster_path=image_path, return_plot=False, patch_size=1500, patch_overlap=0.05)
-        if prediction is None:
-            prediction = pd.DataFrame(columns=["xmin","ymin","xmax","ymax","label","score","image_path"])
-            prediction.loc[0,"image_path"] = image_path
-
-
         predictions.append(prediction)
     
     return predictions

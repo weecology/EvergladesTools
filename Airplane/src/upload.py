@@ -1,9 +1,28 @@
+import re
 import paramiko
 import os
 from src import data
 import pandas as pd
 import glob
-import tempfile
+from label_studio_sdk import Client
+
+def connect_to_label_studio(url, project_name):
+    """Connect to the Label Studio server.
+    Args:
+        port (int, optional): The port of the Label Studio server. Defaults to 8080.
+        host (str, optional): The host of the Label Studio server. Defaults to "localhost". 
+    Returns:
+        str: The URL of the Label Studio server.
+    """
+    ls = Client(url=url, api_key=os.environ["LABEL_STUDIO_API_KEY"])
+    ls.check_connection()
+
+    # Look up existing name
+    projects = ls.list_projects()
+    project = [x for x in projects if x.get_params()["title"] == project_name][0]
+
+    return project
+
 def create_client(user, host, key_filename):
     # Download annotations from Label Studio
     # SSH connection with a user prompt for password
@@ -14,25 +33,22 @@ def create_client(user, host, key_filename):
 
     return sftp
 
-def upload_preannotations(sftp_client, preannotations, images_to_annotate_dir, folder_name):
-    """Upload preannotations to the Label Studio server.
-    Args:
-        preannotations (list): A list of preannotations.
-        images_to_annotate_dir (str): The path to a directory of images.
-        folder_name (str): The name of the folder to upload images to.
-    Returns:
 
-    """
-    # Create a temporary directory for saving JSON files
-    tmpdir = tempfile.gettempdir()
-
-    for image in preannotations:
-        json_string = data.create_label_studio_json(local_image_dir=images_to_annotate_dir, remote_image_dir=folder_name, preannotations=preannotations)
-        # save json and send it to label studio using scp   
-        fn = "{}.json".format(os.path.splitext(os.path.basename(image.image_path.unique()[0]))[0])
-        with open(os.path.join(tmpdir, fn), "w") as f:
-            f.write(json_string)   
-        sftp_client.put(os.path.join(tmpdir, fn), os.path.join(folder_name, "input", fn))
+def import_image_tasks(label_studio_project,image_names, local_image_dir, predictions=None):
+    # Get project
+    tasks = []
+    for index, image_name in enumerate(image_names):
+        data_dict = {'image': os.path.join("/data/local-files/?d=input/",os.path.basename(image_name))}
+        if predictions:
+            prediction = predictions[index]
+            #Skip predictions if there are none
+            if prediction.empty:
+                result_dict = []
+            else:
+                result_dict = [data.label_studio_bbox_format(local_image_dir, prediction)]
+            upload_dict = {"data":data_dict, "predictions":result_dict}
+        tasks.append(upload_dict)
+    label_studio_project.import_tasks(tasks)
 
 def upload_images(sftp_client, images, folder_name):
     # SCP file transfer

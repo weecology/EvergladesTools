@@ -5,47 +5,33 @@ import json
 import pandas as pd
 import PIL
 
-def create_label_studio_json(local_image_dir, remote_image_dir, preannotations):
-    """Create a JSON string for the Label Studio API.
+def label_studio_bbox_format(local_image_dir, preannotations):
+    """Create a JSON string for a single image the Label Studio API.
     """
     predictions = []
-    for prediction in preannotations:
-        original_width = PIL.Image.open(os.path.join(local_image_dir,os.path.basename(prediction.image_path.unique()[0]))).size[0]
-        original_height = PIL.Image.open(os.path.join(local_image_dir,os.path.basename(prediction.image_path.unique()[0]))).size[1]
+    original_width = PIL.Image.open(os.path.join(local_image_dir,os.path.basename(preannotations.image_path.unique()[0]))).size[0]
+    original_height = PIL.Image.open(os.path.join(local_image_dir,os.path.basename(preannotations.image_path.unique()[0]))).size[1]
 
-        for index, row in prediction.iterrows():
-            result = {
-                "id": row.name,
-                "type": "rectanglelabels",
-                "from_name": "label",
-                "to_name": "image",
-                "original_width": original_width,
-                "original_height": original_height,
-                "image_rotation": 0,
-                "value": {
-                    "rotation": 0,
-                    "x": row['xmin']/original_width,
-                    "y": row['ymin']/original_height,
-                    "width": (row['xmax'] - row['xmin'])/original_width,
-                    "height": (row['ymax'] - row['ymin'])/original_height,
-                    "rectanglelabels": [row["label"]]
-                }
-            }
-            predictions.append(result)
-
-        data = {
-            "data": {
-                "image": os.path.join("/data/local-files/?d=input/",row.image_path)
+    for index, row in preannotations.iterrows():
+        result = {
+            "value":{
+                "x": row['xmin']/original_width*100,
+                "y": row['ymin']/original_height*100,
+                "width": (row['xmax'] - row['xmin'])/original_width*100,
+                "height": (row['ymax'] - row['ymin'])/original_height*100,
+                "rotation": 0,
+                "rectanglelabels": [row["label"]]
             },
-            "predictions": [{
-                "model_version":0,
-                "score": 1,
-                "result": predictions
-            }]
+            "score": row["score"],
+            "to_name": "image",
+            "type": "rectanglelabels",
+            "from_name": "label",
+            "original_width": original_width,
+            "original_height": original_height
         }
-
-    json_obj = json.dumps(data)
-    return json_obj
+        predictions.append(result)
+    # As a dict
+    return {"result": predictions}
 
 # check_if_complete label studio images are done
 def check_if_complete(annotations):
