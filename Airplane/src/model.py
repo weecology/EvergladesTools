@@ -6,7 +6,6 @@ from pytorch_lightning.loggers import CometLogger
 import tempfile
 import warnings
 import glob
-import pandas as pd
 
 def evaluate(model, test_csv):
     """Evaluate a model on labeled images.
@@ -87,7 +86,7 @@ def get_latest_checkpoint(checkpoint_dir, annotations):
     
     return m
 
-def predict(model, image_paths, patch_size, patch_overlap):
+def predict(model, image_paths, patch_size, patch_overlap, min_score):
     """Predict bounding boxes for images
     Args:
         model (main.deepforest): A trained deepforest model.
@@ -98,6 +97,7 @@ def predict(model, image_paths, patch_size, patch_overlap):
     predictions = []
     for image_path in image_paths:
         prediction = model.predict_tile(raster_path=image_path, return_plot=False, patch_size=1500, patch_overlap=0.05)
+        prediction[prediction.score > min_score]
         predictions.append(prediction)
     
     return predictions

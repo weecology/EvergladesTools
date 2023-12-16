@@ -1,9 +1,8 @@
-import re
 import paramiko
 import os
+import datetime
 from src import data
 import pandas as pd
-import glob
 from label_studio_sdk import Client
 
 def connect_to_label_studio(url, project_name):
@@ -33,6 +32,11 @@ def create_client(user, host, key_filename):
 
     return sftp
 
+def delete_completed_tasks(label_studio_project):
+    # Delete completed tasks
+    tasks = label_studio_project.get_tasks(status="completed")
+    for task in tasks:
+        label_studio_project.delete_tasks_by_id(task.id)
 
 def import_image_tasks(label_studio_project,image_names, local_image_dir, predictions=None):
     # Get project
@@ -50,64 +54,50 @@ def import_image_tasks(label_studio_project,image_names, local_image_dir, predic
         tasks.append(upload_dict)
     label_studio_project.import_tasks(tasks)
 
+def download_completed_tasks(label_studio_project, train_csv_folder):
+    labeled_tasks = label_studio_project.get_labeled_tasks()
+    if not labeled_tasks:
+        print("No new annotations")
+        return None
+    else:
+        images, labels = [], []
+    for labeled_task in labeled_tasks:
+        image_path = os.path.basename(labeled_task['data']['image'])
+        images.append(image_path)
+        label_json = labeled_task['annotations'][0]["result"]
+        if len(label_json) == 0:
+            result = {
+                    "image_path": image_path,
+                    "xmin": None,
+                    "ymin": None,
+                    "xmax": None,
+                    "ymax": None,
+                    "label": None,
+                    "annotator":labeled_task["annotations"][0]["created_username"]
+                }
+            result = pd.DataFrame(result)
+        else:
+            result = data.convert_json_to_dataframe(label_json, image_path)
+            result["annotator"] = labeled_task["annotations"][0]["created_username"]
+        labels.append(result)
+
+    annotations =  pd.concat(labels) 
+    print(f'Found {len(images)} annotated texts and {len(set(labels))} classes')
+    annotations = annotations[~(annotations.label=="Help me!")]
+    annotations.loc[annotations.label=="Unidentified White","label"] = "Unknown White"
+
+    # Save csv in dir with timestamp
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    train_path = os.path.join(train_csv_folder, "train_{}.csv".format(timestamp))
+    annotations.to_csv(train_path, index=False)
+
+    return annotations
+
 def upload_images(sftp_client, images, folder_name):
     # SCP file transfer
     for image in images:
         sftp_client.put(image, os.path.join(folder_name,"input",os.path.basename(image)))
         print(f"Uploaded {image} successfully")
-
-def download_annotations(sftp_client, folder_name, annotated_images_dir, archive=False):
-    """Download annotations from the Label Studio server.
-    Args:
-        archive (bool, optional): Whether to move the annotations from the server to archive folder. Defaults to False.
-
-    Returns:
-        pandas.DataFrame: A DataFrame of annotations.
-    """
-    # Download all JSON files in the annotated_images_dir folder
-    remote_annotation_path = os.path.join(folder_name, "output")
-
-    # Download all JSON files in the annotated_images_dir folder
-    for file in sftp_client.listdir(remote_annotation_path):
-        remote_path = os.path.join(remote_annotation_path, file)
-        local_path = os.path.join(annotated_images_dir, file)
-        sftp_client.get(remote_path, local_path)
-
-        if archive:
-            # Archive annotations using SSH
-            archive_annotation_path = os.path.join(folder_name, "archive")
-            # sftp check if dir exists
-            try:
-                sftp_client.listdir(archive_annotation_path)
-            except FileNotFoundError:
-                raise FileNotFoundError("The archive directory {} does not exist.".format(archive_annotation_path))
-            # Need sudo to move files
-            sftp_client.rename(remote_path, os.path.join(archive_annotation_path, file))
-
-    # Loop through downloaded JSON files and convert them to dataframes
-    annotations = []
-    json_glob = os.path.join(annotated_images_dir, "*.json")
-    json_files = list(glob.glob(json_glob))
-    for x in json_files:        
-        result = data.convert_json_to_dataframe(x)
-        if result is None:
-            continue
-        else:
-            # Confirm the image exists
-            try:
-                sftp_client.stat(os.path.join(folder_name,"input",result.image_path.unique()[0]))
-            except FileNotFoundError:
-                print("There was a json file for, but no input file for {}".format(result.image_path.unique()[0]))
-                continue
-
-            annotations.append(result)
-    annotations = pd.concat(annotations)
-
-    #Remove helper classes
-    annotations = annotations[~(annotations.label=="Help me!")]
-    annotations.loc[annotations.label=="Unidentified White","label"] = "Unknown White"
-
-    return annotations
 
 def remove_annotated_images_remote_server(sftp_client, annotations, folder_name):
     """Remove images that have been annotated on the Label Studio server."""
