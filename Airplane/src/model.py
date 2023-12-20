@@ -97,7 +97,7 @@ def predict(model, image_paths, patch_size, patch_overlap, min_score):
     predictions = []
     for image_path in image_paths:
         prediction = model.predict_tile(raster_path=image_path, return_plot=False, patch_size=1500, patch_overlap=0.05)
-        prediction[prediction.score > min_score]
+        prediction = prediction[prediction.score > min_score]
         predictions.append(prediction)
     
     return predictions

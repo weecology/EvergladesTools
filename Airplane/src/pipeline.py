@@ -21,7 +21,8 @@ def config_pipeline(config):
         label_studio_project_name=config["label-studio-project"],
         label_studio_url=config["label-studio-url"],
         force_run=config["force_run"],
-        skip_train=config["skip_train"]
+        skip_train=config["skip_train"],
+        min_score=config["min_score"]
     )
 
 def iterate(
