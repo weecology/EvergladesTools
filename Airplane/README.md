@@ -9,7 +9,7 @@ This repository contains a pipeline for rapid annotation and model iteration usi
 ```
 os.environ["LABEL_STUDIO_API_KEY"] = api_key
 ```
-2. Create a config file
+2. Create a config file, copy the sample ones in the repo.
 3. Train an initial model or use random weights, save this model in the config["checkpoint_dir"]
 4. Run a chron job for the pipeline to check label studio 
 

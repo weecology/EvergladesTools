@@ -34,9 +34,9 @@ def create_client(user, host, key_filename):
 
 def delete_completed_tasks(label_studio_project):
     # Delete completed tasks
-    tasks = label_studio_project.get_tasks(status="completed")
+    tasks = label_studio_project.get_labeled_tasks()
     for task in tasks:
-        label_studio_project.delete_tasks_by_id(task.id)
+        label_studio_project.delete_task(task["id"])
 
 def import_image_tasks(label_studio_project,image_names, local_image_dir, predictions=None):
     # Get project
@@ -75,14 +75,14 @@ def download_completed_tasks(label_studio_project, train_csv_folder):
                     "label": None,
                     "annotator":labeled_task["annotations"][0]["created_username"]
                 }
-            result = pd.DataFrame(result)
+            result = pd.DataFrame(result, index=[0])
         else:
             result = data.convert_json_to_dataframe(label_json, image_path)
             result["annotator"] = labeled_task["annotations"][0]["created_username"]
         labels.append(result)
 
     annotations =  pd.concat(labels) 
-    print(f'Found {len(images)} annotated texts and {len(set(labels))} classes')
+    print("There are {} new annotations".format(annotations.shape[0]))
     annotations = annotations[~(annotations.label=="Help me!")]
     annotations.loc[annotations.label=="Unidentified White","label"] = "Unknown White"
 
