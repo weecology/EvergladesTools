@@ -1,4 +1,3 @@
-# Submit prediction jobs
 #!/bin/bash
 #SBATCH --job-name=AirplanePrediction   # Job name
 #SBATCH --mail-type=END               # Mail events
@@ -14,4 +13,4 @@
 #SBATCH --gpus=1
 
 source activate EvergladesTools
-python scripts/predict.py --model_path /blue/ewhite/everglades/Zooniverse/20220910_182547/species_model.pl --image_path $1 --output_path /blue/ewhite/everglades/Airplane/annotations
+python scripts/predict.py --model_path /blue/ewhite/everglades/Zooniverse/20220910_182547/species_model.pl --image_dir /blue/ewhite/everglades/Airplane/images_to_predict --save_dir /blue/ewhite/everglades/Airplane/predictions
