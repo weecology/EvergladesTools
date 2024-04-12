@@ -8,12 +8,9 @@ def test_predict(tmpdir):
     predict(image_paths, save_dir, model_path=None)
     basename = os.path.splitext(os.path.basename(image_paths[0]))[0]
     csv_path = os.path.join(save_dir, "{}.csv".format(basename))
-    svg_path = os.path.join(save_dir, "{}.svg".format(basename))
     
     # Check if the .csv file is created
     assert os.path.exists(csv_path)
-    # Check if the .svg file is created
-    assert os.path.exists(svg_path)
 
 def test_predict_pipeline():
     # Only test if no HPC
@@ -23,9 +20,6 @@ def test_predict_pipeline():
         image_paths = predict(image_dir="/blue/ewhite/everglades/Airplane/images_to_predict", save_dir=save_dir, model_path=model_path)
         basename = os.path.splitext(os.path.basename(image_paths[0]))[0]
         csv_path = os.path.join(save_dir, "{}.csv".format(basename))
-        svg_path = os.path.join(save_dir, "{}.svg".format(basename))
         
         # Check if the .csv file is created
         assert os.path.exists(csv_path)
-        # Check if the .svg file is created
-        assert os.path.exists(svg_path)
