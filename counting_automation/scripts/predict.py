@@ -1,6 +1,5 @@
 # Predict module for labeling pipeline
 from deepforest import main
-from labelstudio import upload
 import os
 import glob
 
@@ -39,6 +38,7 @@ def predict(image_dir, save_dir, model_path, image_paths=None):
 
 if __name__ == "__main__":
     import argparse
+    from scripts.labelstudio import upload
     parser = argparse.ArgumentParser(description='Predict bounding boxes on an image')
     parser.add_argument('--save_dir', type=str, help='Directory to save csv and svg files')
     parser.add_argument('--model_path', type=str, help='Path to model checkpoint')

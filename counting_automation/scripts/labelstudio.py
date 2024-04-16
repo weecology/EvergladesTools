@@ -5,6 +5,7 @@ import datetime
 import pandas as pd
 from label_studio_sdk import Client
 from PIL import Image
+from scripts.predict import predict
 
 def connect_to_label_studio(url, project_name):
     """Connect to the Label Studio server.
@@ -173,13 +174,15 @@ def remove_annotated_images_remote_server(sftp_client, annotations, folder_name)
         sftp_client.rename(remote_path, archive_annotation_path)
         print(f"Archived {image} successfully")
 
-def label_studio_bbox_format(local_image_dir, preannotations):
+def label_studio_bbox_format(local_image_dir, preannotations, to_name="image", from_name="label"):
     """
     Create a JSON string for a single image in the Label Studio API format.
 
     Args:
         local_image_dir (str): The local directory where the images are stored.
         preannotations (DataFrame): A DataFrame containing the preannotations for the image.
+        to_name (str, optional): The name of the image. Defaults to "image".
+        from_name (str, optional): The name of the label. Defaults to "label".
 
     Returns:
         dict: The JSON string in the Label Studio API format.
@@ -260,3 +263,46 @@ def upload(user, host, key_filename, label_studio_url, label_studio_project, ima
     label_studio_project = connect_to_label_studio(url=label_studio_url, project_name=label_studio_project)
     upload_images(sftp_client=sftp_client, images=images, folder_name=label_studio_folder)
     import_image_tasks(label_studio_project=label_studio_project, image_names=images, local_image_dir=os.path.dirname(images[0]), predictions=preannotations)
+
+
+def create_image_pairs_for_annotation(img_left_path, img_right_path):
+    """
+    Creates image pairs for annotation using the provided image paths.
+    
+    Args:
+        img_left_path (str): The file path of the left image.
+        img_right_path (str): The file path of the right image.
+    
+    Returns:
+        list: A list of JSON objects in the Label Studio format containing the bounding box annotations for both images.
+    """
+    predictions_left = predict(img_left_path)
+    predictions_right = predict(img_right_path)
+    label_studio_json_left = label_studio_bbox_format(predictions_left, to_name="img-left", from_name="label-left")
+    label_studio_json_right = label_studio_bbox_format(predictions_right, to_name="img-right", from_name="label-right")
+    # Concat jsons
+    label_studio_json = label_studio_json_left + label_studio_json_right
+    
+    return label_studio_json
+
+def upload_paired_images(img_list, user, folder, host, key_filename, label_studio_url, label_studio_project):
+    """
+    Uploads paired images to Label Studio for annotation.
+
+    Args:
+        img_list (list): A list of two image paths representing the paired images.
+        user (str): The username for the SFTP connection.
+        folder (str): The folder on the SFTP server where the images will be uploaded.
+        host (str): The hostname or IP address of the SFTP server.
+        key_filename (str): The path to the private key file for authentication.
+        label_studio_url (str): The URL of the Label Studio instance.
+        label_studio_project (str): The name of the Label Studio project.
+
+    Returns:
+        None
+    """
+    sftp_client = create_client(user=user, host=host, key_filename=key_filename)
+    label_studio_project = connect_to_label_studio(url=label_studio_url, project_name=label_studio_project)
+    create_image_pairs_for_annotation(img_list[0], img_list[1], label_studio_project)
+    upload_images(sftp_client, img_list, label_studio_project)
+    
