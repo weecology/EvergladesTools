@@ -1,9 +1,9 @@
-from scripts.stitching import create_sfm_model, localize_image
+from scripts.stitching import create_sfm_model, align_and_delete
+from scripts.predict import predict
 import cv2
 import os
 import glob
 from pathlib import Path
-
 
 def test_create_sfm_model():
     test_data_dir = os.path.join(os.path.dirname(__file__),"data")
@@ -21,19 +21,11 @@ def test_create_sfm_model():
     assert os.path.exists(output_path / "features.h5")
     assert os.path.exists(output_path / "matches.h5")
     
-def test_localize_image():
+def test_align_and_delete():
     test_data_dir = os.path.join(os.path.dirname(__file__),"data")
-    output_path = Path(os.path.join(test_data_dir, "output"))
-    image_dir = Path(test_data_dir)
     image_paths = glob.glob(os.path.join(test_data_dir, "*.JPG"))
-    query_image_path = os.path.basename(image_paths[1])
-    reconstruction = output_path / 'sfm'
-
+    predictions = predict(image_paths, save_dir=None, model_path=None)
+    image_dir = Path(test_data_dir)
+    output_path = Path(os.path.join(test_data_dir, "output"))
     model = create_sfm_model(image_dir=image_dir, image_paths=image_paths, output_path=output_path)
-    localize_image(model, image_dir=image_dir, query_image_name=query_image_path, output_path=output_path)
-
-def test_align_predictions():
-    pass
-
-def align_and_delete():
-    pass
+    unique_predictions = align_and_delete(predictions, model=model)

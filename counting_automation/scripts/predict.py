@@ -21,7 +21,7 @@ def predict(model_path, save_dir=None, image_dir=None, image_paths=None):
         image_paths = glob.glob("{}/*.JPG".format(image_dir))
     if model_path is None:
         m = main.deepforest()
-        m.use_release()
+        m.use_bird_release()
     else:
         m = main.deepforest.load_from_checkpoint(model_path)
     

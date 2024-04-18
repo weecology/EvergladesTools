@@ -58,63 +58,57 @@ def create_sfm_model(image_dir, output_path, image_paths=None, feature_type="dis
 
   return model
 
-def localize_image(model, image_dir, query_image_name, output_path):
+
+def align_prediction(predictions, model):
+  """Align the predictions to the SfM model."""
+
+  # Convert pandas df to boxes
+
+  # Multiply each box by the camera matrix
+
+  # Recreate the pandas df with the new boxes
+
+  pass
+
+  return aligned_prediction
+
+def align_and_delete(model, predictions, threshold=0.5):
   """
-  Localize an image in a SfM model.
+  Given a set of images and predictions, align the images using the sfm_model and delete overlapping images.
 
   Args:
-    model (pycolmap.Reconstruction): The SfM model.
-    image_dir (str): The directory path where the images are located.
-    model_path (str): The reconstruction path to the SfM model.
-    query_image_name (str): The name of the query image to be localized. Relative path
-    output_path (str): The path to save the output.
-    pairs (list, optional): A list of image pairs to use for localization. Defaults to None.
+    model (SfMModel): The SfM model containing the images.
+    predictions (DataFrame): The predictions dataframe containing the bounding box predictions.
+    threshold (float, optional): The threshold value for non-max suppression. Defaults to 0.5.
 
   Returns:
-    None
-
+    DataFrame: The filtered predictions dataframe after aligning and deleting overlapping images.
   """
-  matches = output_path / 'matches.h5'
-  features = output_path / 'features.h5'
-  loc_pairs = output_path / 'pairs-from-sfm.txt'
-  results = output_path / 'results.txt'
-
-  references_registered = [model.images[i].name for i in model.reg_image_ids()]
-  camera = pycolmap.infer_camera_from_image(image_dir / query_image_name)
-  ref_ids = [model.find_image_with_name(n).image_id for n in references_registered]
-  conf = {
-      'estimation': {'ransac': {'max_error': 12}},
-      'refinement': {'refine_focal_length': True, 'refine_extra_params': True},
-  }
-  localizer = QueryLocalizer(model, conf)
-  ret, log = pose_from_cluster(localizer, query_image_name, camera, ref_ids, features, matches)
-
-  visualization.visualize_loc(
-    results, image_dir, reconstruction, n=1, top_k_db=1, prefix="query/night", seed=2
-)
-
-def align_prediction(predictions, camera_matrix):
-  pass
-  return aligned_predictions
-
-def align_and_delete(model, query_images, predictions, threshold=0.5):
-  """Given a set of images and predictions, align the images using the sfm_model and delete overlapping images."""
   # Load the SfM model  
-  for query_image in query_images:
-    camera_matrix = localize_image(model, query_image)
-    
+  references_registered = [model.images[i].name for i in model.reg_image_ids()]
+  image_names = predictions.image_path.unique()
+
+  for image_name in image_names:
+    references_registered = [model.images[i].name for i in model.reg_image_ids()]
+    image_index = references_registered.index(image_name)
+    image = model.images[image_index]
+    image_names = predictions.image_path.unique()
+    camera_matrix = image.camera.projection_matrix
+  
     # Align the predictions
     aligned_predictions = align_prediction(predictions, camera_matrix)
 
-    #Perform non-max suppression on aligned predictions
+    # Perform non-max suppression on aligned predictions
     # Convert bounding box coordinates to torch tensors
-    boxes = torch.tensor(predictions[['xmin', 'ymin', 'xmax', 'ymax']].values)
+    boxes = torch.tensor(aligned_predictions[['xmin', 'ymin', 'xmax', 'ymax']].values)
 
     # Convert scores to torch tensor
-    scores = torch.tensor(predictions['score'].values)
+    scores = torch.tensor(aligned_predictions['score'].values)
 
     # Perform non-max suppression
     keep = torchvision.ops.nms(boxes, scores, threshold)
 
-    # Filter the dataframe based on the keep indices
+    # Filter the original dataframe based on the keep indices
     filtered_df = predictions.iloc[keep]
+
+    return filtered_df
