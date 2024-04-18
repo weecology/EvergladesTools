@@ -1,4 +1,5 @@
 
+from pyexpat import model
 import paramiko
 import os
 import datetime
@@ -261,11 +262,11 @@ def upload(user, host, key_filename, label_studio_url, label_studio_project, ima
     preannotations = {os.path.splitext(os.path.basename(preannotation))[0]: pd.read_csv(preannotation) for preannotation in preannotations}
     sftp_client = create_client(user=user, host=host, key_filename=key_filename)
     label_studio_project = connect_to_label_studio(url=label_studio_url, project_name=label_studio_project)
-    upload_images(sftp_client=sftp_client, images=images, folder_name=label_studio_folder)
+    upload_images(sftp_client=sftp_client, images=images)
     import_image_tasks(label_studio_project=label_studio_project, image_names=images, local_image_dir=os.path.dirname(images[0]), predictions=preannotations)
 
 
-def create_image_pairs_for_annotation(img_left_path, img_right_path):
+def create_image_pairs_for_annotation(img_left_path, img_right_path, model_path):
     """
     Creates image pairs for annotation using the provided image paths.
     
@@ -276,8 +277,8 @@ def create_image_pairs_for_annotation(img_left_path, img_right_path):
     Returns:
         list: A list of JSON objects in the Label Studio format containing the bounding box annotations for both images.
     """
-    predictions_left = predict(img_left_path)
-    predictions_right = predict(img_right_path)
+    _, predictions_left = predict(image_paths=[img_left_path], model_path=model_path)
+    _, predictions_right = predict(image_paths=[img_right_path], model_path=model_path)
     label_studio_json_left = label_studio_bbox_format(predictions_left, to_name="img-left", from_name="label-left")
     label_studio_json_right = label_studio_bbox_format(predictions_right, to_name="img-right", from_name="label-right")
     # Concat jsons
@@ -285,7 +286,7 @@ def create_image_pairs_for_annotation(img_left_path, img_right_path):
     
     return label_studio_json
 
-def upload_paired_images(img_list, user, folder, host, key_filename, label_studio_url, label_studio_project):
+def upload_paired_images(img_list, user, folder, host, key_filename, label_studio_url, label_studio_project, label_studio_folder, model_path):
     """
     Uploads paired images to Label Studio for annotation.
 
@@ -297,12 +298,14 @@ def upload_paired_images(img_list, user, folder, host, key_filename, label_studi
         key_filename (str): The path to the private key file for authentication.
         label_studio_url (str): The URL of the Label Studio instance.
         label_studio_project (str): The name of the Label Studio project.
+        label_studio_folder (str): The folder name in Label Studio where the images will be uploaded.
+        model_path (str): The path to the model checkpoint for inference.
 
     Returns:
         None
     """
     sftp_client = create_client(user=user, host=host, key_filename=key_filename)
     label_studio_project = connect_to_label_studio(url=label_studio_url, project_name=label_studio_project)
-    create_image_pairs_for_annotation(img_list[0], img_list[1], label_studio_project)
-    upload_images(sftp_client, img_list, label_studio_project)
+    create_image_pairs_for_annotation(img_list[0], img_list[1], model_path)
+    upload_images(sftp_client, img_list, label_studio_project, label_studio_folder)
     

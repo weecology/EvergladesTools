@@ -3,9 +3,9 @@ from deepforest import main
 import os
 import glob
 
-def predict(image_dir, save_dir, model_path, image_paths=None):
+def predict(model_path, save_dir=None, image_dir=None, image_paths=None):
     """
-    Predict bounding boxes for objects in images using a trained model.
+    Predict bounding boxes for objects in images using a trained model. Can either specify a directory or a list of image paths
 
     Args:
         image_dir (str): Directory path containing the input images.
@@ -29,10 +29,13 @@ def predict(image_dir, save_dir, model_path, image_paths=None):
     for image_path in image_paths:
         boxes = m.predict_tile(image_path, patch_size=1500, patch_overlap=0.05)
         boxes = boxes[boxes["score"] > 0.2]
-        basename = os.path.splitext(os.path.basename(image_path))[0]
-        filename = os.path.join(save_dir, "{}.csv".format(basename))
-        boxes.to_csv(filename)
-        predictions.append(filename)
+        if save_dir:
+            basename = os.path.splitext(os.path.basename(image_path))[0]
+            filename = os.path.join(save_dir, "{}.csv".format(basename))
+            boxes.to_csv(filename)
+            predictions.append(filename)
+        else:
+            predictions.append(boxes)
 
     return image_paths, predictions
 
