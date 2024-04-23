@@ -60,7 +60,7 @@ def create_sfm_model(image_dir, output_path, image_paths=None, feature_type="dis
 
   return model
 
-def transform_2d_to_3d(x,y,intrinsic, extrinsic, depth_map):
+def transform_2d_to_3d(x,y,intrinsic, extrinsic, depth_map=None):
   """Convert a 2d point to a 3d point using the camera intrinsic and extrinsic parameters.
   Inspired by https://github.com/Totoro97/f2-nerf/blob/98f0daacb80e76724eb91519742c30fb35d0f72d/scripts/colmap2poses.py#L58
   https://github.com/colmap/colmap/issues/1476
@@ -72,12 +72,18 @@ def transform_2d_to_3d(x,y,intrinsic, extrinsic, depth_map):
       y (numeric): y location of the point
       intrinsic (np.array): colmap representation of intrinsic matrix in the format [f, cx, cy, k]
       extrinsic (pycolmap extrinsic matrix ): cam_to_world representation of the extrinsic matrix for a given image to the reconstruction
-
+      depth_map (np.array, optional): The depth map of the image. Defaults to None.
   Returns:
       world_direction_vector (np.array): The 3D point in the world coordinate system.
   """
   # Add a dummy dimension to the 2D point for Z, should this be Traspose?
   p = np.array([x, y, 1]).T
+
+  if depth_map is not None:
+    # Get the depth value
+    depth = depth_map[int(y), int(x)]
+  else:
+    depth = 1
   
   # Create intrinsic matrix from the colmap format
   intrinsic_matrix = create_intrinsic_matrix(f=intrinsic[0], cx=intrinsic[1], cy=intrinsic[2], k=intrinsic[3])
@@ -98,9 +104,10 @@ def transform_2d_to_3d(x,y,intrinsic, extrinsic, depth_map):
   # Get unit vector
   vector = world_direction_vector - cam_world
   unit_vector = vector / np.linalg.norm(vector)
-  p3D = cam_world + unit_vector
+  # This leads to very offset points -> 
+  #p3D = cam_world + unit_vector
 
-  return vector
+  return unit_vector
 
 def create_intrinsic_matrix(f, cx, cy, k=0):
   """
@@ -134,7 +141,7 @@ def create_intrinsic_matrix(f, cx, cy, k=0):
 
   return intrinsic_matrix
 
-def align_prediction(predictions, intrinsic, extrinsic, depth_map):
+def align_prediction(predictions, intrinsic, extrinsic, depth_map=None):
   """Align the predictions to the SfM model.
   For camera intrinsic parameters defined in calibration matrix K(3,3), Transformation matrix, M = [R | t] (3,4)
 
@@ -204,10 +211,9 @@ def align_and_delete(model, predictions, threshold=0.5, image_dir=None, visualiz
       continue
     image = model.images[model_index]
     extrinsic = image.cam_from_world
-    depth_map = image.depth_map
 
     # Align the predictions
-    aligned_predictions = align_prediction(image_predictions, intrinsic, extrinsic, depth_map)
+    aligned_predictions = align_prediction(image_predictions, intrinsic, extrinsic, depth_map=None)
     aligned_predictions_across_images.append(aligned_predictions) 
   
   aligned_predictions_across_images = pd.concat(aligned_predictions_across_images)
