@@ -13,4 +13,13 @@ All images are in the zenodo_upload.zip folder. Raw annotations are in the shape
 
 * xmin, xmax, ymin, ymax - coordinates for the ground truth bounding box
 * image_path - basename of the image
-* label - Species label
+* label - Species label 
+
+## Labels
+
+* 'Great Egret'
+* 'Great Blue Heron'
+* 'White Ibis'
+* 'Roseate Spoonbill'
+* 'Wood Stork'
+* 'Snowy Egret'
