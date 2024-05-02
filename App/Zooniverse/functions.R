@@ -7,6 +7,7 @@ library(gridExtra)
 library(stringr)
 library(htmltools)
 library(tidyr)
+library(leaflet.providers)
 
 #Site map
 create_map<-function(colonies){
@@ -59,8 +60,22 @@ filter_annotations<-function(raw_data){
   return(selected_boxes)
 }
 
-totals_plot<-function(selected_boxes){
-  ggplot(selected_boxes) + geom_bar(aes(x=species)) + coord_flip() + ggtitle("Project Total") + labs(x="Label") + theme(text = element_text(size=20))
+species_colors <- colorFactor(palette = c("yellow", "blue",
+                                          "#ff007f", "brown",
+                                          "purple", "white"),
+                              domain = c("Great Egret", "Great Blue Heron",
+                                         "Roseate Spoonbill", "Wood Stork",
+                                          "Snowy Egret", "White Ibis"),
+                              ordered=TRUE)
+
+totals_plot <- function(selected_boxes) {
+  ggplot(selected_boxes, aes(x = species, fill = species_colors(species))) +
+    geom_bar() + coord_flip() + ggtitle("Project Total") + labs(x = "Label") +
+    scale_fill_identity(guide = "none") +
+    theme(
+      text = element_text(size = 20),
+      panel.background = element_rect(fill = "#add8e6")
+    )
 }
 
 site_totals<-function(selected_boxes){
@@ -77,21 +92,20 @@ site_phenology<-function(selected_boxes){
     theme(text = element_text(size=20))
 }
 
-plot_annotations<-function(selected_boxes, MAPBOX_ACCESS_TOKEN){
-  pal <- colorFactor(
-    palette = 'Dark2',
-    domain = selected_boxes$species
-  )
+plot_annotations<-function(selected_boxes, MAPBOX_ACCESS_TOKEN) {
+  pal <- colorFactor(palette = "Dark2", domain = selected_boxes$species)
+
+  # Convert polygons to centroids
+  selected_centroids <- st_centroid(selected_boxes)
+  selected_centroids <- st_transform(selected_centroids, 4326)
   
-  selected_centroids<-st_transform(selected_boxes,4326)
+  # Create mapbox tileset
+  mapbox_tileset <- unique(selected_centroids$tileset_id)
+  mapbox_tileset <- paste("bweinstein.", mapbox_tileset, sep = "")
   
-  #Create mapbox tileset
-  mapbox_tileset<-unique(selected_centroids$tileset_id)
-  mapbox_tileset<-paste("bweinstein.",mapbox_tileset,sep="")
-  
-  m<-leaflet(data=selected_centroids) %>%
-    addProviderTiles("MapBox", options = providerTileOptions(id = mapbox_tileset, minZoom = 8, maxNativeZoom=24, maxZoom = 24, accessToken = MAPBOX_ACCESS_TOKEN)) %>%
-    addCircles(stroke = T,color=~pal(species),fillOpacity = 0.1,radius = 0.25,popup = ~htmlEscape(label))
+  m <- leaflet(data = selected_centroids) %>%
+    addProviderTiles("MapBox", options = providerTileOptions(id = mapbox_tileset, minZoom = 8, maxNativeZoom = 24, maxZoom = 24, accessToken = MAPBOX_ACCESS_TOKEN)) %>%
+    addCircles(stroke = T, color=~pal(species),fillOpacity = 0.1, radius = 0.25, popup = ~htmlEscape(label))
   return(m)
 }
 
@@ -152,21 +166,13 @@ nest_history<-function(dat){
     theme(axis.text.x  = element_text(angle = -90),text = element_text(size=20)) 
 }
 
-species_colors <- colorFactor(palette = c("yellow", "blue",
-                                          "#ff007f", "brown",
-                                          "purple", "white"),
-                              domain = c("Great Egret", "Great Blue Heron",
-                                         "Roseate Spoonbill", "Wood Stork",
-                                          "Snowy Egret", "White Ibis"),
-                              ordered=TRUE)
-
 plot_nests<-function(df, bird_df, MAPBOX_ACCESS_TOKEN){
   mapbox_tileset<-unique(bird_df$tileset_id)[1]
   mapbox_tileset<-paste("bweinstein.",mapbox_tileset,sep="")
 
   m<-leaflet(data=df) %>% 
     addProviderTiles("MapBox", layerId = "mapbox_id",options = providerTileOptions(id = mapbox_tileset, minZoom = 8, maxNativeZoom=24, maxZoom = 24, accessToken = MAPBOX_ACCESS_TOKEN)) %>%
-    addCircles(stroke = T,fillOpacity = 0.1,radius = 0.5,popup = ~htmlEscape(paste(round(sum_top1/num_obs_to,2),nest_id,sep=":"))) %>%
+    addCircles(stroke = T,fillOpacity = 0.1,radius = 0.5,popup = ~htmlEscape(paste(round(sum_top1/num_obs,2),nest_id,sep=":"))) %>%
     addCircles(data = bird_df, stroke = T, fillOpacity = 0, radius = 0.2, color = ~species_colors(label),
                popup = ~htmlEscape(paste(round(score,2), bird_id, sep=":")))
   return(m)
@@ -193,7 +199,7 @@ update_nests<-function(mapbox_tileset, df, bird_df, show_nests, show_birds,
   }
   if (show_nests) {
     map <- map %>%
-     addCircles(data=df,stroke = T,fillOpacity = 0.1,radius = 0.5,popup = ~htmlEscape(paste(round(sum_top1/num_obs_to,2),nest_id,sep=", ")))
+     addCircles(data=df,stroke = T,fillOpacity = 0.1,radius = 0.5,popup = ~htmlEscape(paste(round(sum_top1/num_obs,2),nest_id,sep=", ")))
   }
   if (show_birds) {
     map <- map %>%
@@ -215,10 +221,9 @@ zooniverse_complete<-function(){
   subject_data<-read.csv("data/everglades-watch-subjects.csv")
   raw_annotations<-read.csv("data/parsed_annotations.csv")
   subject_data$Site<-sapply(subject_data$metadata, function(x) str_match(gsub('\"', "", x, fixed = TRUE),"site:(\\w+)")[,2])
-  
   #images per site
   completed<-subject_data %>% group_by(Site) %>% mutate(annotated=subject_id %in% raw_annotations$subject_ids) %>% select(Site,subject_id, annotated) %>% group_by(Site, annotated) %>% summarize(n=n_distinct(subject_id)) %>% 
     tidyr::spread(annotated,n, fill=0) %>% mutate(Percent_Complete=`TRUE`/(`TRUE`+`FALSE`)*100)
   p<-ggplot(completed,aes(x=Site,y=Percent_Complete)) + coord_flip() + geom_bar(stat="identity") + labs(y="Annotated (%)",x="Subject Set") 
   return(p)
-  }
+}

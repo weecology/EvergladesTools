@@ -88,12 +88,14 @@ shinyServer(function(input, output, session) {
   #filter based on selection
     to_plot <- selected_boxes %>% filter(tileset_id==input$selected_image) 
     return(to_plot)
+
   })
   
   observe({
-    output$colony_map<-renderLeaflet(plot_annotations(selected_boxes =colony_filter(),MAPBOX_ACCESS_TOKEN))
+    output$colony_map<-renderLeaflet(plot_annotations(selected_boxes=colony_filter(),MAPBOX_ACCESS_TOKEN))
   })
   
+
   ##Prediction page##
   prediction_filter<-reactive({
     #filter based on selection
