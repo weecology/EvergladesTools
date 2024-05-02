@@ -29,17 +29,28 @@ test = pd.read_csv(os.path.join(base_folder, "test.csv"))
 
 # Unique images in train and test
 print("There are {} images in train".format(len(train.image_path.unique())))
-print("There are {} images in test".format(len(train.image_path.unique())))
+print("There are {} images in test".format(len(test.image_path.unique())))
+
+# Make sure all images are in the shp_png
+for image in train.image_path.unique():
+    if not any(image in png for shp, png in shp_png):
+        print("Missing image in train: {}".format(image))
 
 # Add the shapefiles to the zip
-zip_file = zipfile.ZipFile(os.path.join(base_folder, "shp_png.zip"), "w")
+zip_file = zipfile.ZipFile(os.path.join(base_folder, "zenodo_upload.zip"), "w",)
 for shp, png in shp_png:
-    zip_file.write(os.path.join(base_folder, "shp", shp), shp)
-    zip_file.write(os.path.join(base_folder, "png", png), png)
+    zip_file.write(os.path.join(base_folder, png), png)
 
+# Add all the empty frames
+empty_frames = pd.read_csv(os.path.join(base_folder, "empty_frames.csv"))
+for empty_frame in empty_frames.image_path:
+    zip_file.write(os.path.join(base_folder, empty_frame), empty_frame)
+    
 # Add the train and test csvs to the zip
 zip_file.write("train.csv", "train.csv")
 zip_file.write("test.csv", "test.csv")
+zip_file.write("empty_frames.csv", "empty_frames.csv")
+
 
 zip_file.close()
 
